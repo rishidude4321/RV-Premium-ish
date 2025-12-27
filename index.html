@@ -514,9 +514,11 @@ async function loadEpisodes(tmdbId, season) {
 }
 
 function playTV(id, s, e, title) {
-    const targetUrl = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; // Build exact S/E URL
+    const targetUrl = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
     const proxyUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
-    playContentFromUrl(proxyUrl, title); // Use your existing player logic
+    
+    // We call a helper function to inject the player so we don't repeat code
+    openPlayerOverlay(proxyUrl, `${title} - S${s} E${e}`);
 }
     
 async function loadPerson(id) {
@@ -560,11 +562,7 @@ function setupHero(m) {
 function closeModal() { document.getElementById('mainModal').style.display='none'; modalHistory=[]; historyIndex=-1; }
 function goBack() { if(historyIndex>0) { historyIndex--; const h = modalHistory[historyIndex]; if(h.type=='person') loadPerson(h.id); else loadDetails(h.type, h.id); } }
 function goForward() { if(historyIndex<modalHistory.length-1) { historyIndex++; const h = modalHistory[historyIndex]; if(h.type=='person') loadPerson(h.id); else loadDetails(h.type, h.id); } }
-function updateArrows() {
-    const b = document.getElementById('backBtn'), f = document.getElementById('forwardBtn');
-    b.disabled = historyIndex <= 0; f.disabled = historyIndex >= modalHistory.length - 1;
-    [b, f].forEach(btn => { btn.style.opacity = btn.disabled ? "0.3" : "1"; btn.style.cursor = btn.disabled ? "default" : "pointer"; });
-}
+function updateArrows() { document.getElementById('backBtn').disabled = historyIndex<=0; document.getElementById('forwardBtn').disabled = historyIndex >= modalHistory.length-1; }
 
 // --- THEME ENGINE ---
 function openTheme() {
