@@ -313,11 +313,8 @@ function playContent(id, t, p, type) {
     const height = screen.height;
     
     // 2. Open the window using the full dimensions
-    window.open(
-        cleanUrl, 
-        '_blank', 
-        `width=${width},height=${height},left=0,top=0,menubar=no,status=no,toolbar=no`
-    );
+// This tells the browser: "Open this link in a brand new, full-sized tab"
+    window.open(cleanUrl, '_blank').focus();
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
