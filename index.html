@@ -456,30 +456,30 @@ async function loadDetails(type, id) {
     const inL = activeUser.myList.some(x=>x.id==m.id), isF = activeUser.favorites.some(x=>x.id==m.id);
     const title = m.title || m.name;
 
-    // --- SHARED TOP SECTION ---
+    // --- SHARED HEADER (Same for Movies & TV) ---
     let html = `
     <div class="modal-left"><img src="${POSTER_PATH+m.poster_path}"></div>
     <div class="modal-right">
         <h2>${title}</h2>
         <div style="margin:10px 0;"><span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> <span class="rating-badge critic">⭐ ${m.vote_average.toFixed(1)}</span></div>
         <p style="font-size:0.9rem; max-height:100px; overflow-y:auto; margin-bottom:15px;">${m.overview}</p>
-        <div style="margin-top:20px; display:flex; gap:10px; margin-bottom:20px;">
-            ${type === 'movie' ? `<button class="ctrl-btn" onclick="playContent(${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','movie')">Watch</button>` : ''}
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            ${type === 'movie' ? `<button class="ctrl-btn" onclick="playContent(${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','movie')">Watch Now</button>` : ''}
             <button id="lBtn" class="ctrl-btn ${inL?'active-btn':''}" onclick="toggle('myList', ${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','${type}')">${inL?'✓ List':'+ List'}</button>
             <button id="fBtn" class="ctrl-btn ${isF?'active-btn':''}" onclick="toggle('favorites', ${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','${type}')">+ Favorite</button>
         </div>`;
 
-    // --- CONDITIONAL BOTTOM SECTION ---
+    // --- CONDITIONAL CONTENT ---
     if (type === 'tv') {
-        // TV ONLY: Show Episode Tabs
+        // TV ONLY: Select Episode UI
         html += `
         <div style="display:flex; gap:20px; border-bottom:1px solid #333; margin-bottom:15px;">
-            <button id="tabEpi" class="type-btn active" onclick="showTab('episodes', 'tv', ${m.id})">Select Episode</button>
-            <button id="tabSim" class="type-btn" onclick="showTab('similar', 'tv', ${m.id})">Similar Content</button>
+            <button id="tabEpi" class="type-btn active" onclick="switchTab('episodes', ${m.id})">Select Episode</button>
+            <button id="tabSim" class="type-btn" onclick="switchTab('similar', ${m.id}, '${type}')">Similar Content</button>
         </div>
         <div id="tabContent" style="max-height:350px; overflow-y:auto;"></div>`;
     } else {
-        // MOVIE ONLY: Keep Original Cast & Similar Rows
+        // MOVIE ONLY: Original Cast & SimilarRows
         html += `
         <div class="cast-row">${m.credits.cast.slice(0,8).map(c=>`<div class="cast-card" onclick="navigateTo('person', ${c.id})"><img src="${c.profile_path?POSTER_PATH+c.profile_path:'https://via.placeholder.com/60'}"><p>${c.name}</p></div>`).join('')}</div>
         <h3 style="margin-top:30px;">Similar Content</h3>
@@ -489,38 +489,14 @@ async function loadDetails(type, id) {
     html += `</div>`; // Close modal-right
     inner.innerHTML = html;
 
-    // Trigger TV-specific loading if needed
     if (type === 'tv') renderSeasonPicker(m.id, m.number_of_seasons);
 }
 
-async function renderSeasonPicker(tmdbId, totalSeasons) {
-    let html = `<select class="ctrl-btn" style="width:100%; margin-bottom:15px;" onchange="loadEpisodes(${tmdbId}, this.value)">`;
-    for(let i=1; i<=totalSeasons; i++) html += `<option value="${i}">Season ${i}</option>`;
-    html += `</select><div id="epiGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div>`;
-    document.getElementById('tabContent').innerHTML = html;
-    loadEpisodes(tmdbId, 1);
-}
+async function renderSeasonPicker(id, total) { let h = `<select class="ctrl-btn" style="width:100%; margin-bottom:15px;" onchange="loadEpisodes(${id}, this.value)">`; for(let i=1; i<=total; i++) h += `<option value="${i}">Season ${i}</option>`; h += `</select><div id="epiGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div>`; document.getElementById('tabContent').innerHTML = h; loadEpisodes(id, 1); }
 
-async function loadEpisodes(tmdbId, season) {
-    const grid = document.getElementById('epiGrid');
-    grid.innerHTML = "Loading...";
-    const r = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season}?api_key=${API_KEY}`);
-    const d = await r.json();
-    // Update the map inside loadEpisodes:
-    grid.innerHTML = d.episodes.map(e => `
-        <div class="similar-card" onclick="playTV(${tmdbId}, ${season}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')">
-            <img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;">
-            <p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p>
-        </div>`).join('');
-}
+async function loadEpisodes(id, s) { const g = document.getElementById('epiGrid'); g.innerHTML = "Loading..."; const r = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`); const d = await r.json(); g.innerHTML = d.episodes.map(e => `<div class="similar-card" onclick="playTV(${id}, ${s}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')"><img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;"><p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p></div>`).join(''); }
 
-function playTV(id, s, e, title) {
-    const targetUrl = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
-    const proxyUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
-    
-    // Call the shared overlay function to get the proper UI
-    openPlayerOverlay(proxyUrl, `${title} - S${s} E${e}`);
-}
+function playTV(id, s, e, title) { const url = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; const proxy = PROXY_URL + "?url=" + encodeURIComponent(url); openPlayerOverlay(proxy, `${title} - S${s} E${e}`); }
 
 async function openPlayerOverlay(url, displayTitle) { let p = document.getElementById('fsPlayerOverlay'); if (!p) { p = document.createElement('div'); p.id = 'fsPlayerOverlay'; p.style = "position:fixed; inset:0; z-index:10000; background:#000; display:flex; justify-content:center; align-items:center; overflow:hidden;"; document.body.appendChild(p); } p.innerHTML = `<div style="color:white;">Loading Secure Stream...</div>`; try { const r = await fetch(url); let h = await r.text(); h = h.replace(/<style([\s\S]*?)<\/style>/gi, ''); p.innerHTML = `<div style="width:98vw; max-width:1600px; position:relative;"><div style="padding:10px 15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;"><span style="font-weight:bold; color:var(--accent-color);">${displayTitle}</span><button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button></div><div style="position:relative; width:100%; height:0; padding-bottom:56.25%; background:#000; box-shadow: 0 0 50px rgba(0,0,0,0.8); overflow:hidden;"><div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%;">${h}</div></div></div>`; } catch (e) { p.innerHTML = `<div style="color:red; padding:20px;">Error loading stream.</div>`; } }
     
