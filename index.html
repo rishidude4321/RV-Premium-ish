@@ -286,7 +286,7 @@ function rgbToHex(rgb) {
 <script>
 
 // 1. ADD THIS AT THE TOP OF THE SECOND SCRIPT TAG
-const PROXY_URL = "https://rv-plus.rishivira4321.workers.dev/";
+const PROXY_URL = "https://rv-plus.rishivira4321.workers.dev/?url=";
 
 const API_KEY = '31b33cade35075a7a011c88568bb1070';
 // ... rest of your variables ...
@@ -676,7 +676,6 @@ function selectAvatar(element) {
     element.style.borderColor = 'var(--accent-color)';
     selectedAv = element.src;
 }
-function saveProfile() { const n = document.getElementById('pName').value; if(n) { users.push({id:Date.now(), name:n, avatar:selectedAv||users[0].avatar, myList:[], favorites:[], continueWatching:[], rowPrefs:[0,1,2,3,4,5,6,7,8,9]}); localStorage.setItem('rv_users', JSON.stringify(users)); renderProfiles(); closeCreation(); } }
 
 renderProfiles();
 </script>
