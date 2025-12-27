@@ -293,27 +293,26 @@ const API_KEY = '31b33cade35075a7a011c88568bb1070';
 
 // 2. FIND YOUR OLD playContent AND REPLACE IT WITH THIS:
 function playContent(id, t, p, type) {
-    // 1. Keep your history/save logic
-    activeUser.continueWatching = [{id, title:t, poster_path:p, type}, ...activeUser.continueWatching.filter(x=>x.id!=id)].slice(0,10);
-    save(); 
-
-    // 2. Build the URL (Try the 'vidsrc' engine instead, it's often cleaner for proxies)
-    const targetUrl = type === 'movie' 
-        ? `https://vidsrc.me/embed/movie?tmdb=${id}` 
-        : `https://vidsrc.me/embed/tv?tmdb=${id}&sea=1&epi=1`;
+    // ... (Keep your Continue Watching/History logic here) ...
 
     const cleanUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
 
+    // 1. Create a "Fullscreen Overlay"
+    const overlay = document.createElement('div');
+    overlay.id = "movieOverlay";
+    overlay.style = "position:fixed; inset:0; background:#000; z-index:9999; display:flex; flex-direction:column;";
 
+    // 2. Add a "Back" button so you aren't stuck
+    overlay.innerHTML = `
+        <div style="padding:10px; background:#111; display:flex; align-items:center;">
+            <button onclick="document.getElementById('movieOverlay').remove()" style="background:none; border:none; color:white; cursor:pointer; font-size:1.2rem;"> ❮ Back to Gallery</button>
+            <span style="margin-left:20px; color:#888;">Playing: ${t}</span>
+        </div>
+        <iframe src="${cleanUrl}" style="flex:1; border:none;" allowfullscreen></iframe>
+    `;
 
-    
-    // 3. Open in a new window, but let's make it a "Popup" so it feels like a player
-    // 1. Get the user's screen dimensions
-    const width = screen.width;
-    const height = screen.height;
-    
-// This replaces your current page with the proxy movie page
-    window.location.href = cleanUrl;
+    // 3. Put it on the screen
+    document.body.appendChild(overlay);
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
