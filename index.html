@@ -322,7 +322,7 @@ async function playContent(id, t, p, type) {
         // 4. The Aspect-Ratio Lock
         // This forces a 16:9 ratio and prevents the "stretched" look from your screenshot
         playerDiv.innerHTML = `
-            <div style="width:100vw; max-width:1920; position:relative;">
+            <div style="width:95vw; max-width:1200px; position:relative;">
                 <div style="padding:15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;">
                     <span style="font-weight:bold; color:var(--accent-color);">${t}</span>
                     <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button>
