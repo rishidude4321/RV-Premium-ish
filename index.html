@@ -518,36 +518,11 @@ function playTV(id, s, e, title) {
     const targetUrl = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
     const proxyUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
     
-    // We call a helper function to inject the player so we don't repeat code
+    // Call the shared overlay function to get the proper UI
     openPlayerOverlay(proxyUrl, `${title} - S${s} E${e}`);
 }
 
-async function openPlayerOverlay(url, displayTitle) {
-    let playerDiv = document.getElementById('fsPlayerOverlay');
-    if (!playerDiv) {
-        playerDiv = document.createElement('div');
-        playerDiv.id = 'fsPlayerOverlay';
-        playerDiv.style = "position:fixed; inset:0; z-index:10000; background:#000; display:flex; justify-content:center; align-items:center; overflow:hidden;";
-        document.body.appendChild(playerDiv);
-    }
-    playerDiv.innerHTML = `<div style="color:white;">Loading Secure Stream...</div>`;
-    try {
-        const response = await fetch(url);
-        let html = await response.text();
-        html = html.replace(/<style([\s\S]*?)<\/style>/gi, ''); // Scrubber
-        
-        playerDiv.innerHTML = `
-            <div style="width:98vw; max-width:1600px; position:relative;">
-                <div style="padding:10px 15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;">
-                    <span style="font-weight:bold; color:var(--accent-color);">${displayTitle}</span>
-                    <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button>
-                </div>
-                <div style="position:relative; width:100%; height:0; padding-bottom:56.25%; background:#000; box-shadow: 0 0 50px rgba(0,0,0,0.8); overflow:hidden;">
-                    <div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%;">${html}</div>
-                </div>
-            </div>`;
-    } catch (err) { playerDiv.innerHTML = `<div style="color:red; padding:20px;">Error loading stream.</div>`; }
-}
+async function openPlayerOverlay(url, displayTitle) { let p = document.getElementById('fsPlayerOverlay'); if (!p) { p = document.createElement('div'); p.id = 'fsPlayerOverlay'; p.style = "position:fixed; inset:0; z-index:10000; background:#000; display:flex; justify-content:center; align-items:center; overflow:hidden;"; document.body.appendChild(p); } p.innerHTML = `<div style="color:white;">Loading Secure Stream...</div>`; try { const r = await fetch(url); let h = await r.text(); h = h.replace(/<style([\s\S]*?)<\/style>/gi, ''); p.innerHTML = `<div style="width:98vw; max-width:1600px; position:relative;"><div style="padding:10px 15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;"><span style="font-weight:bold; color:var(--accent-color);">${displayTitle}</span><button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button></div><div style="position:relative; width:100%; height:0; padding-bottom:56.25%; background:#000; box-shadow: 0 0 50px rgba(0,0,0,0.8); overflow:hidden;"><div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%;">${h}</div></div></div>`; } catch (e) { p.innerHTML = `<div style="color:red; padding:20px;">Error loading stream.</div>`; } }
     
 async function loadPerson(id) {
     const res = await fetch(`https://api.themoviedb.org/3/person/${id}?api_key=${API_KEY}&append_to_response=combined_credits`);
