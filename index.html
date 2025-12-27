@@ -180,6 +180,11 @@
 
 <div id="qr-container"><div id="qrcode"></div><button class="ctrl-btn" onclick="toggleQR()" style="color:rgb(255, 255, 255); margin-top:10px;">Close</button></div>
 
+<div id="playerContainer" style="display:none; position:fixed; inset:0; z-index:9999; background:#000;">
+    <video id="my-video" class="video-js" controls preload="auto" width="100%" height="100%"></video>
+    <button onclick="closePlayer()" style="position:absolute; top:20px; right:20px;">Close</button>
+</div>
+
 <div id="continueSection" class="category-section" style="display:none;"><div class="category-title">Continue Watching</div><div id="continueRow" class="movie-row"></div></div>
 <div id="myListSection" class="category-section" style="display:none;"><div class="category-title">My List</div><div id="myListRow" class="movie-row"></div></div>
 <div id="dynamicContent"></div>
@@ -277,8 +282,32 @@ function rgbToHex(rgb) {
 }
 
 </script>
+
 <script>
+
+// 1. ADD THIS AT THE TOP OF THE SECOND SCRIPT TAG
+const PROXY_URL = "https://stream-proxy.your-username.workers.dev/?url=";
+
 const API_KEY = '31b33cade35075a7a011c88568bb1070';
+// ... rest of your variables ...
+
+// 2. FIND YOUR OLD playContent AND REPLACE IT WITH THIS:
+function playContent(id, t, p, type) {
+    // Save to "Continue Watching"
+    activeUser.continueWatching = [{id, title:t, poster_path:p, type}, ...activeUser.continueWatching.filter(x=>x.id!=id)].slice(0,10);
+    save(); 
+
+    // Build the Target URL
+    const targetUrl = type === 'movie' 
+        ? `https://rivestream.org/embed?type=movie&id=${id}` 
+        : `https://rivestream.org/embed?type=tv&id=${id}&season=1&episode=1`;
+
+    // Wrap it in your Proxy
+    const cleanUrl = PROXY_URL + encodeURIComponent(targetUrl);
+
+    // For now, let's open the cleaned URL
+    window.open(cleanUrl);
+}
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
 let curT = 'movie', activeUser = null, editMode = false, selectedAv = '';
@@ -433,6 +462,7 @@ function updateLists() {
         } else document.getElementById(sec).style.display = 'none';
     });
 }
+
 function triggerSearch() { executeSearch(document.getElementById('searchBar').value); }
 async function executeSearch(q) { 
     document.getElementById('heroContainer').innerHTML = ''; 
@@ -597,6 +627,17 @@ function deleteProfile(id) {
         renderProfiles();
         closeCreation();
     }
+}
+
+function decodeSource(encoded) {
+    // Logic from your "VidSrc" notes: Reverse -> Subtract 1 -> Hex to ASCII
+    const reversed = encoded.split('').reverse().join('');
+    let adjusted = '';
+    for (let i = 0; i < reversed.length; i++) {
+        adjusted += String.fromCharCode(reversed.charCodeAt(i) - 1);
+    }
+    // Convert hex pairs to actual URL string
+    return adjusted.match(/.{1,2}/g).map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
 }
 
 function saveProfile() {
