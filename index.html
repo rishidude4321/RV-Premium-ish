@@ -286,7 +286,7 @@ function rgbToHex(rgb) {
 <script>
 
 // 1. ADD THIS AT THE TOP OF THE SECOND SCRIPT TAG
-const PROXY_URL = "https://stream-proxy.your-username.workers.dev/?url=";
+const PROXY_URL = "https://rv-plus.rishivira4321.workers.dev/";
 
 const API_KEY = '31b33cade35075a7a011c88568bb1070';
 // ... rest of your variables ...
@@ -446,10 +446,6 @@ async function loadPerson(id) {
     </div>`;
 }
 
-function playContent(id, t, p, type) {
-    activeUser.continueWatching = [{id, title:t, poster_path:p, type}, ...activeUser.continueWatching.filter(x=>x.id!=id)].slice(0,10);
-    save(); window.open(type === 'movie' ? `https://rivestream.org/embed?type=movie&id=${id}` : `https://rivestream.org/embed?type=tv&id=${id}&season=1&episode=1`);
-}
 function toggle(k, id, t, p, type) { if(activeUser[k].some(x=>x.id==id)) activeUser[k]=activeUser[k].filter(x=>x.id!=id); else activeUser[k].push({id, title:t, poster_path:p, type}); save(); document.getElementById(k=='myList'?'lBtn':'fBtn').classList.toggle('active-btn'); }
 function save() { localStorage.setItem('rv_users', JSON.stringify(users)); updateLists(); }
 function updateLists() {
