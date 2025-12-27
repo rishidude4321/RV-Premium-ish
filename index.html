@@ -318,21 +318,28 @@ async function playContent(id, t, p, type) {
 
     playerDiv.innerHTML = `<div style="color:white; font-family:sans-serif;">Loading Secure Stream...</div>`;
     
+// ... inside playContent function ...
     try {
         const response = await fetch(proxyUrl);
-        const html = await response.text();
+        let html = await response.text(); // Get the raw HTML
+        
+        // --- ADD THE SCRUBBER HERE ---
+        // This cleans out the provider's CSS that forces the "stretched" look
+        html = html.replace(/<style([\s\S]*?)<\/style>/gi, ''); 
+        html = html.replace(/link rel="stylesheet"/gi, 'disabled-link');
+        // ------------------------------
         
         // 4. The Aspect-Ratio Lock
         // This forces a 16:9 ratio and prevents the "stretched" look from your screenshot
         playerDiv.innerHTML = `
-            <div style="width:95vw; max-width:1200px; position:relative;">
-                <div style="padding:15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;">
+            <div style="width:98vw; max-width:1600px; position:relative;">
+                <div style="padding:10px 15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;">
                     <span style="font-weight:bold; color:var(--accent-color);">${t}</span>
                     <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button>
                 </div>
-                <div style="position:relative; width:100%; height:0; padding-bottom:56.25%; background:#000; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
-                    <div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; overflow-y:auto; background:#000;">
-                        ${html}
+                <div style="position:relative; width:100%; height:0; padding-bottom:56.25%; background:#000; box-shadow: 0 0 50px rgba(0,0,0,0.8); overflow:hidden;">
+                    <div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%; overflow-y:scroll; scrollbar-width: thin;">
+                        <div style="padding:20px; color:white; font-family:sans-serif;">${html}</div>
                     </div>
                 </div>
             </div>
