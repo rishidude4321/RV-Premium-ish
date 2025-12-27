@@ -293,20 +293,24 @@ const API_KEY = '31b33cade35075a7a011c88568bb1070';
 
 // 2. FIND YOUR OLD playContent AND REPLACE IT WITH THIS:
 function playContent(id, t, p, type) {
-    // Save to "Continue Watching"
+    // 1. Keep your history/save logic
     activeUser.continueWatching = [{id, title:t, poster_path:p, type}, ...activeUser.continueWatching.filter(x=>x.id!=id)].slice(0,10);
     save(); 
 
-    // Build the Target URL
+    // 2. Build the URL (Try the 'vidsrc' engine instead, it's often cleaner for proxies)
     const targetUrl = type === 'movie' 
-        ? `https://rivestream.org/embed?type=movie&id=${id}` 
-        : `https://rivestream.org/embed?type=tv&id=${id}&season=1&episode=1`;
+        ? `https://vidsrc.me/embed/movie?tmdb=${id}` 
+        : `https://vidsrc.me/embed/tv?tmdb=${id}&sea=1&epi=1`;
 
-    // Wrap it in your Proxy
-    const cleanUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
+    const cleanUrl = PROXY_URL + encodeURIComponent(targetUrl);
 
-    // For now, let's open the cleaned URL
-    window.open(cleanUrl);
+    // 3. Open in a new window, but let's make it a "Popup" so it feels like a player
+    const width = 800;
+    const height = 450;
+    const left = (window.innerWidth / 2) - (width / 2);
+    const top = (window.innerHeight / 2) - (height / 2);
+
+    window.open(cleanUrl, 'VideoPlayer', `width=${width},height=${height},top=${top},left=${left}`);
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
