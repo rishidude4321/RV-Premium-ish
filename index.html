@@ -292,28 +292,48 @@ const API_KEY = '31b33cade35075a7a011c88568bb1070';
 // ... rest of your variables ...
 
 // 2. FIND YOUR OLD playContent AND REPLACE IT WITH THIS:
-function playContent(id, t, p, type) {
-    // 1. Keep your history/save logic
+async function playContent(id, t, p, type) {
+    // 1. Save history
     activeUser.continueWatching = [{id, title:t, poster_path:p, type}, ...activeUser.continueWatching.filter(x=>x.id!=id)].slice(0,10);
     save(); 
 
-    // 2. Build the URL (Try the 'vidsrc' engine instead, it's often cleaner for proxies)
+    // 2. Build the URL for your proxy
     const targetUrl = type === 'movie' 
-        ? `https://vidsrc.me/embed/movie?tmdb=${id}` 
-        : `https://vidsrc.me/embed/tv?tmdb=${id}&sea=1&epi=1`;
+        ? `https://vidsrc.to/embed/movie/${id}` 
+        : `https://vidsrc.to/embed/tv/${id}/1/1`;
 
-    const cleanUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
+    const proxyUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
 
+    // 3. Create a Full-Screen Player Overlay
+    let playerDiv = document.getElementById('fsPlayerOverlay');
+    if (!playerDiv) {
+        playerDiv = document.createElement('div');
+        playerDiv.id = 'fsPlayerOverlay';
+        playerDiv.style = "position:fixed; inset:0; z-index:10000; background:#000; display:flex; flex-direction:column;";
+        document.body.appendChild(playerDiv);
+    }
 
-
+    // 4. Use AJAX to fetch the proxied content and inject it
+    // This keeps the "Ad-Block" logic of your worker but stays on this tab
+    playerDiv.innerHTML = `<div style="color:white; padding:20px;">Loading Secure Stream...</div>`;
     
-    // 3. Open in a new window, but let's make it a "Popup" so it feels like a player
-    // 1. Get the user's screen dimensions
-    const width = screen.width;
-    const height = screen.height;
-    
-// This replaces your current page with the proxy movie page
-    window.location.href = cleanUrl;
+    try {
+        const response = await fetch(proxyUrl);
+        const html = await response.text();
+        
+        // Inject the cleaned HTML directly into your page
+        playerDiv.innerHTML = `
+            <div style="padding:10px; background:#111; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; color:var(--accent-color);">${t}</span>
+                <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()">✕ Close Player</button>
+            </div>
+            <div id="proxyInjectionPoint" style="flex:1; width:100%;">
+                ${html}
+            </div>
+        `;
+    } catch (err) {
+        playerDiv.innerHTML = `<div style="color:red; padding:20px;">Error loading stream. Please check your proxy worker.</div>`;
+    }
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
