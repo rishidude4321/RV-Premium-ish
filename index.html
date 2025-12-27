@@ -303,14 +303,21 @@ function playContent(id, t, p, type) {
         : `https://vidsrc.me/embed/tv?tmdb=${id}&sea=1&epi=1`;
 
     const cleanUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
+
+
+
     
     // 3. Open in a new window, but let's make it a "Popup" so it feels like a player
-    const width = 800;
-    const height = 450;
-    const left = (window.innerWidth / 2) - (width / 2);
-    const top = (window.innerHeight / 2) - (height / 2);
-
-    window.open(cleanUrl, 'VideoPlayer', `width=${width},height=${height},top=${top},left=${left}`);
+    // 1. Get the user's screen dimensions
+    const width = screen.width;
+    const height = screen.height;
+    
+    // 2. Open the window using the full dimensions
+    window.open(
+        cleanUrl, 
+        '_blank', 
+        `width=${width},height=${height},left=0,top=0,menubar=no,status=no,toolbar=no`
+    );
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
