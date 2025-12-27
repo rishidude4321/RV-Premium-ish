@@ -457,23 +457,34 @@ async function loadDetails(type, id) {
     const title = m.title || m.name;
     const embedUrl = type === 'movie' ? `https://rivestream.org/embed?type=movie&id=${id}` : `https://rivestream.org/embed?type=tv&id=${id}&season=1&episode=1`;
 
+    // --- Inside loadDetails function ---
     inner.innerHTML = `
     <div class="modal-left"><img src="${POSTER_PATH+m.poster_path}"></div>
     <div class="modal-right">
         <h2>${title}</h2>
-        <div style="margin:10px 0;"><span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> <span class="rating-badge critic">⭐ ${m.vote_average.toFixed(1)}</span></div>
-        <p style="font-size:0.9rem; max-height:120px; overflow-y:auto;">${m.overview}</p>
-        <div class="cast-row">${m.credits.cast.slice(0,8).map(c=>`<div class="cast-card" onclick="navigateTo('person', ${c.id})"><img src="${c.profile_path?POSTER_PATH+c.profile_path:'https://via.placeholder.com/60'}"><p>${c.name}</p></div>`).join('')}</div>
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button class="ctrl-btn" onclick="playContent(${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','${type}')">Watch</button>
-            <button id="lBtn" class="ctrl-btn ${inL?'active-btn':''}" onclick="toggle('myList', ${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','${type}')">${inL?'✓ List':'+ List'}</button>
-            <button id="fBtn" class="ctrl-btn ${isF?'active-btn':''}" onclick="toggle('favorites', ${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','${type}')">+ Favorite</button>
+        <div style="margin:10px 0;">
+            <span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> 
+            <span class="rating-badge critic">⭐ ${m.vote_average.toFixed(1)}</span>
         </div>
-        <h3 style="margin-top:30px;">Similar Content</h3>
-        <div class="similar-row">${m.similar.results.slice(0,6).map(s=>`<div class="similar-card" onclick="navigateTo('${type}',${s.id})"><img src="${POSTER_PATH+s.poster_path}"></div>`).join('')}</div>
+        <p style="font-size:0.9rem; max-height:120px; overflow-y:auto; margin-bottom:20px;">${m.overview}</p>
+        
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            ${type === 'movie' ? `<button class="ctrl-btn" onclick="playContent(${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','movie')">WATCH NOW</button>` : ''}
+            <button id="lBtn" class="ctrl-btn ${inL?'active-btn':''}" onclick="toggle('myList', ${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','${type}')">${inL?'✓ List':'+ List'}</button>
+        </div>
+    
+        <div style="display:flex; gap:20px; border-bottom:1px solid #333; margin-bottom:15px;">
+            <button id="tabEpi" class="type-btn active" onclick="switchModalTab('episodes', '${type}', ${m.id})">${type==='tv'?'Episodes':'Details'}</button>
+            <button id="tabSim" class="type-btn" onclick="switchModalTab('similar', '${type}', ${m.id})">Similar Content</button>
+        </div>
+    
+        <div id="modalTabContent" style="min-height:300px;">
+            ${type === 'tv' ? `<div id="episodeLoading">Loading Seasons...</div>` : `<div class="cast-row">${m.credits.cast.slice(0,8).map(c=>`<div class="cast-card"><img src="${POSTER_PATH+c.profile_path}"><p>${c.name}</p></div>`).join('')}</div>`}
+        </div>
     </div>`;
-    updateArrows();
-}
+    
+    // If it's a TV show, automatically load the first season
+    if(type === 'tv') loadSeasons(m.id, m.number_of_seasons);
 
 async function loadPerson(id) {
     const res = await fetch(`https://api.themoviedb.org/3/person/${id}?api_key=${API_KEY}&append_to_response=combined_credits`);
@@ -625,6 +636,55 @@ function surpriseMe() { fetch(`https://api.themoviedb.org/3/movie/top_rated?api_
 // Updated to handle IDs for editing/deleting
 let editingProfileId = null;
 
+async function loadSeasons(tmdbId, totalSeasons) {
+    const container = document.getElementById('modalTabContent');
+    let html = `<select id="seasonSelect" class="ctrl-btn" style="margin-bottom:15px; width:200px;" onchange="loadEpisodes(${tmdbId}, this.value)">`;
+    for(let i=1; i<=totalSeasons; i++) {
+        html += `<option value="${i}">Season ${i}</option>`;
+    }
+    html += `</select><div id="episodeGrid" class="similar-row" style="flex-wrap:wrap; gap:10px; max-height:400px; overflow-y:auto;"></div>`;
+    container.innerHTML = html;
+    loadEpisodes(tmdbId, 1); // Load Season 1 by default
+}
+
+async function loadEpisodes(tmdbId, seasonNum) {
+    const grid = document.getElementById('episodeGrid');
+    grid.innerHTML = "Loading Episodes...";
+    const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNum}?api_key=${API_KEY}`);
+    const data = await res.json();
+    
+    grid.innerHTML = data.episodes.map(ep => `
+        <div class="similar-card" style="flex: 0 0 180px; background:#1a1a1a; padding:10px; border-radius:8px; border:1px solid #333;" onclick="playTVContent(${tmdbId}, ${seasonNum}, ${ep.episode_number}, '${ep.name.replace(/'/g,"")}')">
+            <img src="${ep.still_path ? POSTER_PATH+ep.still_path : 'https://via.placeholder.com/180x100'}" style="height:100px; border-radius:4px;">
+            <p style="font-size:0.8rem; margin:5px 0 0 0; font-weight:bold;">E${ep.episode_number}: ${ep.name}</p>
+        </div>
+    `).join('');
+}
+
+function playTVContent(id, s, e, title) {
+    // This calls your proxy with the exact season and episode
+    const targetUrl = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
+    const proxyUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
+    
+    // Call your existing player logic but with the TV URL
+    executePlayerInjection(proxyUrl, title);
+}
+
+function switchModalTab(tab, type, id) {
+    document.getElementById('tabEpi').classList.toggle('active', tab==='episodes');
+    document.getElementById('tabSim').classList.toggle('active', tab==='similar');
+    
+    if(tab === 'similar') {
+        fetch(`https://api.themoviedb.org/3/${type}/${id}/similar?api_key=${API_KEY}`)
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('modalTabContent').innerHTML = `<div class="similar-row" style="flex-wrap:wrap;">${d.results.slice(0,6).map(s=>`<div class="similar-card" onclick="navigateTo('${type}',${s.id})"><img src="${POSTER_PATH+s.poster_path}"></div>`).join('')}</div>`;
+            });
+    } else {
+        initApp(); // Or re-call the episode loading logic
+    }
+}
+    
 function openProfileCreation(id = null) {
     editingProfileId = id;
     const deleteArea = document.getElementById('deleteArea');
