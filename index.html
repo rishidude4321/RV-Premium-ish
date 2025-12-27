@@ -303,7 +303,7 @@ function playContent(id, t, p, type) {
         : `https://rivestream.org/embed?type=tv&id=${id}&season=1&episode=1`;
 
     // Wrap it in your Proxy
-    const cleanUrl = PROXY_URL + encodeURIComponent(targetUrl);
+    const cleanUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
 
     // For now, let's open the cleaned URL
     window.open(cleanUrl);
