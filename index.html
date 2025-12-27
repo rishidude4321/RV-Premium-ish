@@ -286,7 +286,7 @@ function rgbToHex(rgb) {
 <script>
 
 // 1. ADD THIS AT THE TOP OF THE SECOND SCRIPT TAG
-const PROXY_URL = "https://rv-plus.rishivira4321.workers.dev/?url=";
+const PROXY_URL = "https://rv-plus.rishivira4321.workers.dev/";
 
 const API_KEY = '31b33cade35075a7a011c88568bb1070';
 // ... rest of your variables ...
@@ -302,8 +302,8 @@ function playContent(id, t, p, type) {
         ? `https://vidsrc.me/embed/movie?tmdb=${id}` 
         : `https://vidsrc.me/embed/tv?tmdb=${id}&sea=1&epi=1`;
 
-    const cleanUrl = PROXY_URL + encodeURIComponent(targetUrl);
-
+    const cleanUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
+    
     // 3. Open in a new window, but let's make it a "Popup" so it feels like a player
     const width = 800;
     const height = 450;
