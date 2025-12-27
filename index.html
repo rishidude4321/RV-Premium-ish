@@ -312,9 +312,8 @@ function playContent(id, t, p, type) {
     const width = screen.width;
     const height = screen.height;
     
-    // 2. Open the window using the full dimensions
-// This tells the browser: "Open this link in a brand new, full-sized tab"
-    window.open(cleanUrl, '_blank').focus();
+// This replaces your current page with the proxy movie page
+    window.location.href = cleanUrl;
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
