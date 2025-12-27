@@ -518,6 +518,71 @@ function goBack() { if(historyIndex>0) { historyIndex--; const h = modalHistory[
 function goForward() { if(historyIndex<modalHistory.length-1) { historyIndex++; const h = modalHistory[historyIndex]; if(h.type=='person') loadPerson(h.id); else loadDetails(h.type, h.id); } }
 function updateArrows() { document.getElementById('backBtn').disabled = historyIndex<=0; document.getElementById('forwardBtn').disabled = historyIndex >= modalHistory.length-1; }
 
+async function loadDetails(type, id) {
+    document.getElementById('mainModal').style.display = 'block';
+    const inner = document.getElementById('modalInnerBody'); inner.innerHTML = "";
+    const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&append_to_response=credits,similar`);
+    const m = await res.json();
+    const inL = activeUser.myList.some(x=>x.id==m.id), isF = activeUser.favorites.some(x=>x.id==m.id);
+    const title = m.title || m.name;
+
+    inner.innerHTML = `
+    <div class="modal-left"><img src="${POSTER_PATH+m.poster_path}"></div>
+    <div class="modal-right">
+        <h2>${title}</h2>
+        <div style="margin:10px 0;"><span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> <span class="rating-badge critic">⭐ ${m.vote_average.toFixed(1)}</span></div>
+        <p style="font-size:0.9rem; max-height:100px; overflow-y:auto; margin-bottom:15px;">${m.overview}</p>
+        
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+            ${type === 'movie' ? `<button class="ctrl-btn" onclick="playContent(${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','movie')">WATCH NOW</button>` : ''}
+            <button id="lBtn" class="ctrl-btn ${inL?'active-btn':''}" onclick="toggle('myList', ${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','${type}')">${inL?'✓ List':'+ List'}</button>
+        </div>
+
+        <div style="display:flex; gap:20px; border-bottom:1px solid #333; margin-bottom:15px;">
+            <button id="tabEpi" class="type-btn active" onclick="showTab('episodes', '${type}', ${m.id})">${type==='tv'?'Select Episode':'Cast'}</button>
+            <button id="tabSim" class="type-btn" onclick="showTab('similar', '${type}', ${m.id})">Similar Content</button>
+        </div>
+
+        <div id="tabContent" style="max-height:350px; overflow-y:auto;">
+            </div>
+    </div>`;
+
+    // Default view
+    if(type === 'tv') {
+        renderSeasonPicker(m.id, m.number_of_seasons);
+    } else {
+        showTab('similar', 'movie', m.id);
+    }
+}
+
+
+async function renderSeasonPicker(tmdbId, totalSeasons) {
+    let html = `<select class="ctrl-btn" style="width:100%; margin-bottom:15px;" onchange="loadEpisodes(${tmdbId}, this.value)">`;
+    for(let i=1; i<=totalSeasons; i++) html += `<option value="${i}">Season ${i}</option>`;
+    html += `</select><div id="epiGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div>`;
+    document.getElementById('tabContent').innerHTML = html;
+    loadEpisodes(tmdbId, 1);
+}
+
+async function loadEpisodes(tmdbId, season) {
+    const grid = document.getElementById('epiGrid');
+    grid.innerHTML = "Loading...";
+    const r = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season}?api_key=${API_KEY}`);
+    const d = await r.json();
+    grid.innerHTML = d.episodes.map(e => `
+        <div class="similar-card" onclick="playTV(${tmdbId}, ${season}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')">
+            <img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;">
+            <p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p>
+        </div>`).join('');
+}
+
+function playTV(id, s, e, title) {
+    const targetUrl = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
+    const proxyUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
+    // Reuse your existing player injection logic
+    playContentFromUrl(proxyUrl, title); 
+}
+    
 // --- THEME ENGINE ---
 function openTheme() {
     const modal = document.getElementById('themeModal');
