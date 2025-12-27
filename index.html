@@ -293,27 +293,39 @@ const API_KEY = '31b33cade35075a7a011c88568bb1070';
 
 // 2. FIND YOUR OLD playContent AND REPLACE IT WITH THIS:
 function playContent(id, t, p, type) {
-    // 1. Keep your history/save logic
+    // 1. History/Save logic
     activeUser.continueWatching = [{id, title:t, poster_path:p, type}, ...activeUser.continueWatching.filter(x=>x.id!=id)].slice(0,10);
     save(); 
 
-    // 2. Build the URL (Try the 'vidsrc' engine instead, it's often cleaner for proxies)
+    // 2. Build the URL
     const targetUrl = type === 'movie' 
         ? `https://vidsrc.me/embed/movie?tmdb=${id}` 
         : `https://vidsrc.me/embed/tv?tmdb=${id}&sea=1&epi=1`;
 
     const cleanUrl = PROXY_URL + "?url=" + encodeURIComponent(targetUrl);
 
+    // 3. Create a Full-Screen Cinema Overlay
+    const playerOverlay = document.createElement('div');
+    playerOverlay.id = "cinemaMode";
+    // This style makes the player fill 100% of the width AND height
+    playerOverlay.style = "position:fixed; inset:0; background:#000; z-index:10000; display:flex; flex-direction:column;";
 
+    playerOverlay.innerHTML = `
+        <div style="padding:15px; background:rgba(20,20,20,0.9); display:flex; justify-content:space-between; align-items:center; color:white; font-family:sans-serif;">
+            <div style="font-weight:bold;">${t}</div>
+            <button onclick="document.getElementById('cinemaMode').remove()" 
+                    style="background:#e50914; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                ✕ Close Player
+            </button>
+        </div>
+        <iframe src="${cleanUrl}" 
+                style="flex:1; width:100%; border:none;" 
+                allowfullscreen 
+                allow="autoplay; encrypted-media">
+        </iframe>
+    `;
 
-    
-    // 3. Open in a new window, but let's make it a "Popup" so it feels like a player
-    // 1. Get the user's screen dimensions
-    const width = screen.width;
-    const height = screen.height;
-    
-// This replaces your current page with the proxy movie page
-    window.open(cleanUrl, '_blank').focus();
+    document.body.appendChild(playerOverlay);
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
