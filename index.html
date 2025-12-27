@@ -506,6 +506,7 @@ async function loadEpisodes(tmdbId, season) {
     grid.innerHTML = "Loading...";
     const r = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season}?api_key=${API_KEY}`);
     const d = await r.json();
+    // Update the map inside loadEpisodes:
     grid.innerHTML = d.episodes.map(e => `
         <div class="similar-card" onclick="playTV(${tmdbId}, ${season}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')">
             <img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;">
@@ -519,6 +520,33 @@ function playTV(id, s, e, title) {
     
     // We call a helper function to inject the player so we don't repeat code
     openPlayerOverlay(proxyUrl, `${title} - S${s} E${e}`);
+}
+
+async function openPlayerOverlay(url, displayTitle) {
+    let playerDiv = document.getElementById('fsPlayerOverlay');
+    if (!playerDiv) {
+        playerDiv = document.createElement('div');
+        playerDiv.id = 'fsPlayerOverlay';
+        playerDiv.style = "position:fixed; inset:0; z-index:10000; background:#000; display:flex; justify-content:center; align-items:center; overflow:hidden;";
+        document.body.appendChild(playerDiv);
+    }
+    playerDiv.innerHTML = `<div style="color:white;">Loading Secure Stream...</div>`;
+    try {
+        const response = await fetch(url);
+        let html = await response.text();
+        html = html.replace(/<style([\s\S]*?)<\/style>/gi, ''); // Scrubber
+        
+        playerDiv.innerHTML = `
+            <div style="width:98vw; max-width:1600px; position:relative;">
+                <div style="padding:10px 15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0;">
+                    <span style="font-weight:bold; color:var(--accent-color);">${displayTitle}</span>
+                    <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button>
+                </div>
+                <div style="position:relative; width:100%; height:0; padding-bottom:56.25%; background:#000; box-shadow: 0 0 50px rgba(0,0,0,0.8); overflow:hidden;">
+                    <div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%;">${html}</div>
+                </div>
+            </div>`;
+    } catch (err) { playerDiv.innerHTML = `<div style="color:red; padding:20px;">Error loading stream.</div>`; }
 }
     
 async function loadPerson(id) {
