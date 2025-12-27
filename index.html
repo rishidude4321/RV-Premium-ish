@@ -313,7 +313,7 @@ function playContent(id, t, p, type) {
     const height = screen.height;
     
 // This replaces your current page with the proxy movie page
-    window.open(cleanUrl, '_blank').focus();
+    window.location.href = cleanUrl;
 }
 const IMG_PATH = 'https://image.tmdb.org/t/p/w1280', POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
 
