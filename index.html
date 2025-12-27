@@ -560,7 +560,11 @@ function setupHero(m) {
 function closeModal() { document.getElementById('mainModal').style.display='none'; modalHistory=[]; historyIndex=-1; }
 function goBack() { if(historyIndex>0) { historyIndex--; const h = modalHistory[historyIndex]; if(h.type=='person') loadPerson(h.id); else loadDetails(h.type, h.id); } }
 function goForward() { if(historyIndex<modalHistory.length-1) { historyIndex++; const h = modalHistory[historyIndex]; if(h.type=='person') loadPerson(h.id); else loadDetails(h.type, h.id); } }
-function updateArrows() { document.getElementById('backBtn').disabled = historyIndex<=0; document.getElementById('forwardBtn').disabled = historyIndex >= modalHistory.length-1; }
+function updateArrows() {
+    const b = document.getElementById('backBtn'), f = document.getElementById('forwardBtn');
+    b.disabled = historyIndex <= 0; f.disabled = historyIndex >= modalHistory.length - 1;
+    [b, f].forEach(btn => { btn.style.opacity = btn.disabled ? "0.3" : "1"; btn.style.cursor = btn.disabled ? "default" : "pointer"; });
+}
 
 // --- THEME ENGINE ---
 function openTheme() {
