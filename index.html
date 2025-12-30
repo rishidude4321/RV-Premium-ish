@@ -144,40 +144,39 @@
         <button class="ctrl-btn" style="border-color:#555; color:#888;" onclick="toggleEditMode()" id="editBtn">Settings</button>
         <button class="ctrl-btn" onclick="openProfileCreation()">+ Add Profile</button>
     </div>
+<div id="versionModal" class="modal" onclick="if(event.target==this) this.style.display='none'" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; z-index:10001;">
+    <div class="modal-content" style="max-width:600px; width:90%; border:1px solid rgba(255,255,255,0.2); background:var(--card-bg); max-height:80vh; overflow-y:auto; padding:25px; position:relative;">
+        <h2 style="color:var(--accent-color); margin-top:0;">Patch Notes</h2>
+        <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">
+            <li>🛠️ V1.0: Basic Product, TV & Movies with User Friendly Frontend</li>
+            <li>🛠️ V1.1: Fixed TV Errors & Cloudflare Proxy Integration To Reduce Popups</li>
+        </ul>
 
-    <div id="versionModal" class="modal" onclick="if(event.target==this) this.style.display='none'" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; z-index:10001;">
-        <div class="modal-content" style="max-width:600px; width:90%; border:1px solid rgba(255,255,255,0.2); background:var(--card-bg); max-height:80vh; overflow-y:auto; padding:25px;">
-            <h2 style="color:var(--accent-color); margin-top:0;">Patch Notes</h2>
-            <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">
-                <li>🛠️ V1.0: Basic Product, TV & Movies with User Friendly Frontend</li>
-                <li>🛠️ V1.1: Fixed TV Errors & Cloudflare Proxy Integration To Reduce Popups</li>
+        <button class="ctrl-btn" style="width:auto; padding:5px 15px; font-size:0.8rem; margin-bottom:10px;" onclick="const d=document.getElementById('moreDetails'); d.style.display=d.style.display==='none'?'block':'none'">Click Here For More Details</button>
+
+        <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
+            <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Summary</h3>
+            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The backend utilizes Cloudflare Workers to act as a security layer. This ensures headers are cleaned and tracking scripts are blocked.</p>
+            
+            <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">All Features</h3>
+            <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.8; margin-bottom:15px;">
+                <li>✓ Search bar with functional magnifying glass</li>
+                <li>✓ Extended Metadata (Cast & Overviews)</li>
+                <li>✓ Recommendation Engine (Similar Content)</li>
             </ul>
 
-            <button class="ctrl-btn" style="width:auto; padding:5px 15px; font-size:0.8rem; margin-bottom:10px;" onclick="const d=document.getElementById('moreDetails'); d.style.display=d.style.display==='none'?'block':'none'">Click Here For More Details</button>
+            <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">API Documentation</h3>
+            <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.6; word-break: break-all;">
+                <li><strong>Source:</strong> Cinemaos</li>
+                <li><strong>Movie:</strong> cinemaos.tech/player/{tmdb_id}</li>
+                <li><strong>TV:</strong> cinemaos.tech/player/{tmdb_id}/{s}/{e}</li>
+                <li style="margin-top:10px; font-style: italic;">Note: Best used with adblockers; rare background downloads may occur.</li>
+            </ul>
+        </div>
 
-            <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
-                <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Summary</h3>
-                <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:10px;">The backend utilizes Cloudflare Workers to act as a security layer. This ensures headers are cleaned and tracking scripts are blocked.</p>
-                
-                <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">All Features</h3>
-                <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.5;">
-                    <li>Search bar with magnifying glass button</li>
-                    <li>*Seeing more information</li>
-                    <li>Similar movies</li>
-                </ul>
-            </div>
-
-                <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">API Documentation/h3>
-                <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.5;">
-                    <li>**Cinemaos**</li>
-                    <li>https://cinemaos.tech/player/{tmdb_id}</li>
-                    <li>https://cinemaos.tech/player/{tmdb_id}/{season_number}/{episode_number}</li>
-					<li>Notes</li>
-					<li>has ads to adblockers</li>
-					<li>does download stuff rarely (nonharmful at least)</li>
-                </ul>
-            </div>
-
+        <button class="ctrl-btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
+    </div>
+</div>
             <button class="ctrl-btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
         </div>
     </div>
