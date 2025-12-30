@@ -156,7 +156,7 @@
 
         <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
             <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Summary</h3>
-            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The backend utilizes Cloudflare Workers as a security layer to clean headers and block tracking.</p>
+            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The app uses a embedded Rive API to retrieve metadata and a Cloudflare Worker proxy to manage the connection between the client and content providers. This backend infrastructure is used to remove tracking scripts from the source, bypass certain provider-level restrictions, and display content. The platform includes a local profile system and a manual episode selection tool for TV series, with the underlying architecture built to support data synchronization across multiple devices via Cloudflare KV.</p>
             
             <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">API Documentation</h3>
             <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.6; word-break: break-all;">
