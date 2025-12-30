@@ -500,25 +500,26 @@ const MY_ACCOUNT_ID = "rishivira-account-01";
 
 // 2. Updated Sync Function
 async function syncAllProfiles() {
-    try {
-        // We simplified the Worker to just use /api/load-all
-        const response = await fetch(`${WORKER_URL}api/load-all`);
-        const cloudProfiles = await response.json();
+    const response = await fetch(`${WORKER_URL}api/load-all`);
+    const cloudUsers = await response.json();
+    
+    if (cloudUsers && cloudUsers.length > 0) {
+        users = cloudUsers.map(u => ({
+            id: parseInt(u.profile_id),
+            name: u.name,
+            avatar: u.avatar,
+            // Parse the strings back into arrays for the UI
+            continueWatching: JSON.parse(u.watch_history || "[]"),
+            myList: JSON.parse(u.myList || "[]"),
+            favorites: JSON.parse(u.favorites || "[]")
+        }));
+        renderProfiles();
         
-        if (cloudProfiles && cloudProfiles.length > 0) {
-            // Map cloud data back to your app's 'users' format
-            users = cloudProfiles.map(p => ({
-                id: parseInt(p.profile_id), // Ensure ID stays a number for your logic
-                name: p.name,
-                avatar: p.avatar,
-                myList: [],      // Initialize empty lists if not in DB yet
-                favorites: [],
-                continueWatching: JSON.parse(p.watch_history || "[]")
-            }));
-            renderProfiles();
+        // If someone was already logged in, refresh their specific data
+        if (activeUser) {
+            activeUser = users.find(u => u.id === activeUser.id);
+            updateLists();
         }
-    } catch (error) {
-        console.error("Cloud sync failed:", error);
     }
 }
 
@@ -673,7 +674,34 @@ async function loadPerson(id) {
 }
 
 function toggle(k, id, t, p, type) { if(activeUser[k].some(x=>x.id==id)) activeUser[k]=activeUser[k].filter(x=>x.id!=id); else activeUser[k].push({id, title:t, poster_path:p, type}); save(); document.getElementById(k=='myList'?'lBtn':'fBtn').classList.toggle('active-btn'); }
-function save() { localStorage.setItem('rv_users', JSON.stringify(users)); updateLists(); }
+async function save() {
+    // 1. Keep the local backup
+    localStorage.setItem('rv_users', JSON.stringify(users));
+    updateLists();
+
+    // 2. Sync the active user to the cloud if someone is logged in
+    if (activeUser) {
+        try {
+            const profileData = {
+                id: activeUser.id,
+                name: activeUser.name,
+                avatar: activeUser.avatar,
+                // We send the history/lists as a string for the D1 TEXT column
+                watch_history: JSON.stringify(activeUser.continueWatching),
+                myList: JSON.stringify(activeUser.myList),
+                favorites: JSON.stringify(activeUser.favorites)
+            };
+
+            await fetch(`${WORKER_URL}api/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profileData)
+            });
+        } catch (err) {
+            console.error("Auto-sync failed:", err);
+        }
+    }
+}
 function updateLists() {
     ['continueWatching', 'myList', 'favorites'].forEach(k => {
         const row = k=='continueWatching'?'continueRow':k=='myList'?'myListRow':'favRow';
