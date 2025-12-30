@@ -381,15 +381,43 @@ function rgbToHex(rgb) {
 
 // 1. ADD THIS AT THE TOP OF THE SECOND SCRIPT TAG
 const PROXY_URL = "https://rv-plus.rishivira4321.workers.dev/";
-
 const API_KEY = '31b33cade35075a7a011c88568bb1070';
+const WORKER_URL = PROXY_URL; // Now it correctly uses your worker link
 // ... rest of your variables ...
 
+async function saveToCloud(profileData) {
+    try {
+        await fetch(`${WORKER_URL}api/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: profileData.id.toString(), // Uses the actual Profile ID
+                profile_name: profileData.name,
+                watch_history: JSON.stringify(profileData.continueWatching)
+            })
+        });
+        console.log("Cloud Sync Successful");
+    } catch (error) {
+        console.error("Cloud Sync Failed:", error);
+    }
+}
+
+async function loadFromCloud(id) {
+    try {
+        const response = await fetch(`${WORKER_URL}api/load?id=${id}`);
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to load from cloud:", error);
+        return null;
+    }
+}
+	
 // 2. FIND YOUR OLD playContent AND REPLACE IT WITH THIS:
 async function playContent(id, t, p, type) {
     // 1. History and List Logic
     activeUser.continueWatching = [{id, title:t, poster_path:p, type}, ...activeUser.continueWatching.filter(x=>x.id!=id)].slice(0,10);
     save(); 
+	saveToCloud(activeUser); // Sends the updated continueWatching list to D1
 
     // 2. Build Proxy URL
     const targetUrl = type === 'movie' 
@@ -476,8 +504,16 @@ function renderProfiles() {
 }
 function handleProfile(id) { if(editMode) openProfileCreation(id); else login(id); }
 function toggleEditMode() { editMode = !editMode; document.getElementById('editBtn').innerText = editMode?'Done':'Settings'; renderProfiles(); }
-function login(id) {
+
+async function login(id) {
     activeUser = users.find(u => u.id === id);
+    
+    // NEW: Check cloud for latest history before showing the dashboard
+    const cloudData = await loadFromCloud(id);
+    if (cloudData && cloudData.watch_history) {
+        activeUser.continueWatching = JSON.parse(cloudData.watch_history);
+    }
+
     document.getElementById('profileGate').style.display = 'none';
     document.getElementById('mainNav').style.display = 'flex';
     document.getElementById('mainHeader').style.display = 'block';
@@ -485,6 +521,7 @@ function login(id) {
     document.getElementById('navUserAvatar').src = activeUser.avatar;
     initApp();
 }
+	
 function logout() { location.reload(); }
 function reloadHome() { initApp(); }
 
