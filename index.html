@@ -25,6 +25,7 @@
 		#versionModal .modal-content::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
 		#moreDetails h3 { border-left: 3px solid var(--accent-color); padding-left: 10px; }
 
+		#profileGate > *:not(.version-banner):not(.modal) { position: relative; z-index: 1; } .version-banner { position: absolute; top: 25px; right: 25px; z-index: 100; } .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10001; }
         #profileGate { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; width: 100vw; background: #000; overflow: hidden; }
         .profile-container { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; margin-top: 30px; max-width: 80%; }
         .profile-item { cursor: pointer; transition: 0.3s; width: 150px; position: relative; }
@@ -131,36 +132,45 @@
 
 <body>
 
-<div id="profileGate" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; width: 100vw; background: #000;">
-    <div class="version-banner" onclick="document.getElementById('versionModal').style.display='flex'">
+<div id="profileGate" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; width: 100vw; background: #000; overflow: hidden;">
+    
+    <div class="version-banner" style="position: absolute; top: 25px; right: 25px; z-index: 100;" onclick="document.getElementById('versionModal').style.display='flex'">
         Version 1.1 updated <span style="margin-left:8px;">ⓘ</span>
     </div>
 
-	<div id="versionModal" class="modal" onclick="if(event.target==this) this.style.display='none'" style="display:none; align-items:center; justify-content:center; z-index:10001;">
-	    <div class="modal-content" style="max-width:600px; width:90%; border:1px solid rgba(255,255,255,0.2); background:var(--card-bg); max-height:80vh; overflow-y:auto;">
-	        <h2 style="color:var(--accent-color); margin-top:0;">Patch Notes</h2>
-	        <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">
-	            <li>🛠️ **V1.0**: Basic Product, TV & Movies with User Friendly Frontend.</li>
-	            <li>🛠️ **V1.1**: Fixed TV Errors & Cloudflare Proxy Integration.</li>
-	        </ul>
-	
-	        <button class="ctrl-btn" style="width:auto; padding:5px 15px; font-size:0.8rem; margin-bottom:10px;" onclick="const d=document.getElementById('moreDetails'); d.style.display=d.style.display==='none'?'block':'none'">> Click Here For More Details</button>
-	
-	        <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; pt:15px; margin-top:10px;">
-	            <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Technical Infrastructure</h3>
-	            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:10px;">The backend utilizes Cloudflare Workers to act as a security layer between the client and the content providers. This ensures headers are cleaned and tracking scripts are blocked.</p>
-	            
-	            <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Core Features</h3>
-	            <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.5;">
-	                <li>**Aspect Ratio Lock**: Forced 16:9 cinematic display.</li>
-	                <li>**Dynamic Proxy**: Custom URL generation to bypass ad-walls.</li>
-	                <li>**Metadata Sync**: Real-time TV show season/episode fetching.</li>
-	            </ul>
-	        </div>
-	
-	        <button class="ctrl-btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
-	    </div>
-	</div>
+    <h1 style="font-size: 3.5rem; margin-bottom: 20px;">Who's watching?</h1>
+    <div id="profileList" class="profile-container"></div>
+    <div style="margin-top: 50px; display:flex; gap:15px;">
+        <button class="ctrl-btn" style="border-color:#555; color:#888;" onclick="toggleEditMode()" id="editBtn">Settings</button>
+        <button class="ctrl-btn" onclick="openProfileCreation()">+ Add Profile</button>
+    </div>
+
+    <div id="versionModal" class="modal" onclick="if(event.target==this) this.style.display='none'" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; z-index:10001;">
+        <div class="modal-content" style="max-width:600px; width:90%; border:1px solid rgba(255,255,255,0.2); background:var(--card-bg); max-height:80vh; overflow-y:auto; padding:25px;">
+            <h2 style="color:var(--accent-color); margin-top:0;">Patch Notes</h2>
+            <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">
+                <li>🛠️ **V1.0**: Basic Product, TV & Movies with User Friendly Frontend.</li>
+                <li>🛠️ **V1.1**: Fixed TV Errors & Cloudflare Proxy Integration.</li>
+            </ul>
+
+            <button class="ctrl-btn" style="width:auto; padding:5px 15px; font-size:0.8rem; margin-bottom:10px;" onclick="const d=document.getElementById('moreDetails'); d.style.display=d.style.display==='none'?'block':'none'">> Click Here For More Details</button>
+
+            <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
+                <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Technical Infrastructure</h3>
+                <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:10px;">The backend utilizes Cloudflare Workers to act as a security layer. This ensures headers are cleaned and tracking scripts are blocked.</p>
+                
+                <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Core Features</h3>
+                <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.5;">
+                    <li>**Aspect Ratio Lock**: Forced 16:9 cinematic display.</li>
+                    <li>**Dynamic Proxy**: Custom URL generation to bypass ad-walls.</li>
+                    <li>**Metadata Sync**: Real-time TV show season/episode fetching.</li>
+                </ul>
+            </div>
+
+            <button class="ctrl-btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
+        </div>
+    </div>
+</div>
 
 <div id="profileCreation" style="display:none;">
     <h1 id="creationTitle">Profile Editor</h1>
