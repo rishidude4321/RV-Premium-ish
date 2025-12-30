@@ -26,8 +26,8 @@
         .profile-item img { width: 120px; height: 120px; border-radius: 4px; object-fit: cover; background: #222; border: 3px solid transparent; }
         .profile-item:hover img { border-color: #fff; }
         /* Update existing banner to be clickable */
-        .version-banner { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); color: var(--secondary-text); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; z-index: 100; transition: 0.2s; }
-        .version-banner:hover { background: rgba(255,255,255,0.2); border-color: var(--accent-color); color: #fff; }
+        .version-banner { position: absolute; top: 30px; right: 30px; background: rgba(255,255,255,0.1); color: var(--secondary-text); padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; z-index: 99; transition: 0.3s; }
+        .version-banner:hover { background: rgba(255,255,255,0.2); color: #fff; border-color: var(--accent-color); }
         
         /* --- NAVIGATION --- */
         nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: rgba(0,0,0,0.8); position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(10px); }
@@ -125,23 +125,30 @@
 
 <body>
 
-<div id="profileGate" style="position: relative;">
+<div id="profileGate" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;">
     <div class="version-banner" onclick="document.getElementById('versionModal').style.display='flex'">
-        Version 1.1 updated <span style="margin-left:8px; cursor:pointer;">ⓘ</span>
+        Version 1.1 updated <span style="margin-left:8px;">ⓘ</span>
     </div>
 
-    <div id="versionModal" class="modal" onclick="if(event.target==this) this.style.display='none'" style="display:none; align-items:center; justify-content:center;">
-        <div class="modal-content" style="max-width:400px; border-color:rgba(255,255,255,0.2); text-align:center;">
-            <h2 style="color:var(--accent-color);">Version 1.1 Patch Notes</h2>
+    <div id="versionModal" class="modal" onclick="if(event.target==this) this.style.display='none'" style="display:none; align-items:center; justify-content:center; z-index:10001;">
+        <div class="modal-content" style="max-width:400px; border:1px solid rgba(255,255,255,0.2); background:var(--card-bg);">
+            <h2 style="color:var(--accent-color);">Patch Notes</h2>
             <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6;">
-                <li>🚀 Added Native TV Episode Selector</li>
-                <li>🛠️ Improved Cloudflare Proxy Scrubber</li>
-                <li>📱 Persistent Cross-Device Sync (Beta)</li>
-                <li>🖼️ Fixed Profile Avatar broken links</li>
+                <li>🚀 Native TV Episode Selector</li>
+                <li>🛠️ Cloudflare Proxy Scrubber</li>
+                <li>📱 Device Sync (Coming Soon)</li>
             </ul>
             <button class="ctrl-btn" style="width:100%; margin-top:15px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
         </div>
     </div>
+
+    <h1 style="font-size: 3.5rem; margin-bottom: 20px;">Who's watching?</h1>
+    <div id="profileList" class="profile-container"></div>
+    <div style="margin-top: 50px; display:flex; gap:15px;">
+        <button class="ctrl-btn" style="border-color:#555; color:#888;" onclick="toggleEditMode()" id="editBtn">Settings</button>
+        <button class="ctrl-btn" onclick="openProfileCreation()">+ Add Profile</button>
+    </div>
+</div>
 
 <div id="profileCreation" style="display:none;">
     <h1 id="creationTitle">Profile Editor</h1>
