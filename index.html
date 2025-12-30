@@ -136,9 +136,73 @@
         <div class="modal-content" style="max-width:400px; border:1px solid rgba(255,255,255,0.2); background:var(--card-bg);">
             <h2 style="color:var(--accent-color);">Patch Notes</h2>
             <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6;">
-                <li>🚀 Native TV Episode Selector</li>
-                <li>🛠️ Cloudflare Proxy Scrubber</li>
-                <li>📱 Device Sync (Coming Soon)</li>
+                <li>🛠️ Version 1.0 ~ Basic Product, TV shows & Movies Displayed With Embedded API Folder Connected To User Friendly Frontend. Optimized UX With Cast Info, Overviews, & Recommendations</li>
+                <li>🛠️ Version 1.1 ~ Fixed TV Show Errors, Improved Quality Via Alternative Server. Created Cloudfare Backed With Proxy Script To Run Content In Custom URL To Remove Most Ads & Popups</li>
+                <li>**All Features:**
+---
+- Search bar with magnifying glass button
+- Seeing more information
+- Similar movies
+- cast members
+	- can click on them and see other movies they've been in
+- favorite button
+- my list button
+- continue watching
+	- also be able to remove it from there
+- QR code
+- surprise me
+- rotten tomato and critic score
+- View all + generate more
+- banner for coming soon movies on top of movie poster with the date it will be out
+- Theme
+	- Light Dark
+	- Back Color
+	- Accent Color
+	- Presets (Black and green, black and red, light and blue)
+- Filter
+	- All Genres
+	- Ratings
+	- Year Before or After
+	- Actor
+	- Sort option for years and ratings to do lowest to highest or highest to lowest
+- ten or so different categories that can also be customized on the main page
+	- Recently Added
+	- High Rated
+	- "Hidden Gems"
+	- Superheroes
+	- MCU
+	- Sci-Fi
+	- Classics
+	- Holiday Hits
+
+API Documentation
+---
+
+**Cinemaos**
+https://cinemaos.live
+
+https://cinemaos.tech/player/{tmdb_id}
+
+https://cinemaos.tech/player/{tmdb_id}/{season_number}/{episode_number}
+
+Notes
+has ads to adblockers
+does download stuff (nonharmful at least)
+
+
+**Rive**
+https://rivestream.org/settings
+https://rivestream.org/embed/docs#demo
+
+https://rivestream.org/embed?type=movie&id={tmdbId}
+<
+iframe src="https://rivestream.org/embed?type=movie&id=533535" allowfullscreen ></iframe>
+
+
+https://rivestream.org/embed?type=tv&id={tmdbId}&season={season}&episode={episode}
+
+<
+iframe src="https://rivestream.org/embed?type=tv&id=1399&season=1&episode=1" allowfullscreen ></iframe></li>
             </ul>
             <button class="ctrl-btn" style="width:100%; margin-top:15px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
         </div>
