@@ -842,15 +842,34 @@ function openProfileCreation(id = null) {
     }
 }
 
-function deleteProfile(id) {
-    if (confirm("Are you sure you want to delete this profile?")) {
-        users = users.filter(u => u.id !== id);
-        localStorage.setItem('rv_users', JSON.stringify(users));
-        renderProfiles();
-        closeCreation();
+async function deleteProfile(id) {
+    if (confirm("Are you sure you want to delete this profile? It will be removed from all devices.")) {
+        try {
+            // 1. Tell Cloudflare to delete it
+            const response = await fetch(`${WORKER_URL}api/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+
+            if (!response.ok) throw new Error("Cloud deletion failed");
+
+            // 2. Remove it from your local list
+            users = users.filter(u => u.id !== id);
+            
+            // 3. Update local storage and UI
+            localStorage.setItem('rv_users', JSON.stringify(users));
+            renderProfiles();
+            closeCreation();
+            
+            console.log("Profile permanently deleted from cloud.");
+        } catch (err) {
+            console.error("Delete failed:", err);
+            alert("Could not delete from cloud. Please check your connection.");
+        }
     }
 }
-
+	
 function decodeSource(encoded) {
     // Logic from your "VidSrc" notes: Reverse -> Subtract 1 -> Hex to ASCII
     const reversed = encoded.split('').reverse().join('');
