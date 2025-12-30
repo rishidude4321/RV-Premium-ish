@@ -149,22 +149,15 @@
         <h2 style="color:var(--accent-color); margin-top:0;">Patch Notes</h2>
         <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">
             <li>🛠️ V1.0: Basic Product, TV & Movies with User Friendly Frontend</li>
-            <li>🛠️ V1.1: Fixed TV Errors & Cloudflare Proxy Integration To Reduce Popups</li>
+            <li>🛠️ V1.1: Fixed TV Errors & Cloudflare Proxy Integration</li>
         </ul>
 
         <button class="ctrl-btn" style="width:auto; padding:5px 15px; font-size:0.8rem; margin-bottom:10px;" onclick="const d=document.getElementById('moreDetails'); d.style.display=d.style.display==='none'?'block':'none'">Click Here For More Details</button>
 
         <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
             <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Summary</h3>
-            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The backend utilizes Cloudflare Workers to act as a security layer. This ensures headers are cleaned and tracking scripts are blocked.</p>
+            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The backend utilizes Cloudflare Workers as a security layer to clean headers and block tracking.</p>
             
-            <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">All Features</h3>
-            <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.8; margin-bottom:15px;">
-                <li>✓ Search bar with functional magnifying glass</li>
-                <li>✓ Extended Metadata (Cast & Overviews)</li>
-                <li>✓ Recommendation Engine (Similar Content)</li>
-            </ul>
-
             <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">API Documentation</h3>
             <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.6; word-break: break-all;">
                 <li><strong>Source:</strong> Cinemaos</li>
@@ -177,11 +170,6 @@
         <button class="ctrl-btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
     </div>
 </div>
-            <button class="ctrl-btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
-        </div>
-    </div>
-</div>
-
 <div id="profileCreation" style="display:none;">
     <h1 id="creationTitle">Profile Editor</h1>
     <input type="text" id="pName" class="ctrl-btn" style="width:350px; border-radius:8px;" placeholder="Name">
