@@ -853,37 +853,59 @@ function decodeSource(encoded) {
     return adjusted.match(/.{1,2}/g).map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
 }
 
-function saveProfile() {
+async function saveProfile() {
     const n = document.getElementById('pName').value;
     const customAv = document.getElementById('pCustom').value;
     const finalAv = customAv || selectedAv || 'https://image.tmdb.org/t/p/w185/39U9p9WvK8M4hN8G189R5G0vL0G.jpg';
 
-    if (!n) {
-        alert("Please enter a name");
-        return;
-    }
+    if (!n) { alert("Please enter a name"); return; }
 
-    if (editingProfileId) {
-        // Update existing
-        const index = users.findIndex(u => u.id === editingProfileId);
-        users[index].name = n;
-        users[index].avatar = finalAv;
-    } else {
-        // Add new
-        users.push({
-            id: Date.now(),
-            name: n,
-            avatar: finalAv,
-            myList: [],
-            favorites: [],
-            continueWatching: [],
-            rowPrefs: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    const profileId = editingProfileId || Date.now();
+    
+    // This object matches exactly what your D1 table expects
+    const profileData = {
+        id: profileId,
+        name: n,
+        avatar: finalAv,
+        watch_history: JSON.stringify([]) 
+    };
+
+    try {
+        // 1. Send to Cloudflare D1
+        const response = await fetch(`${WORKER_URL}api/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profileData)
         });
-    }
 
-    localStorage.setItem('rv_users', JSON.stringify(users));
-    renderProfiles();
-    closeCreation();
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        // 2. Update local list ONLY after cloud confirms success
+        if (editingProfileId) {
+            const index = users.findIndex(u => u.id === editingProfileId);
+            users[index].name = n;
+            users[index].avatar = finalAv;
+        } else {
+            users.push({
+                id: profileId,
+                name: n,
+                avatar: finalAv,
+                myList: [],
+                favorites: [],
+                continueWatching: [],
+                rowPrefs: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            });
+        }
+
+        // 3. Update Storage and UI
+        localStorage.setItem('rv_users', JSON.stringify(users));
+        renderProfiles();
+        closeCreation();
+        
+    } catch (err) {
+        console.error("Save failed:", err);
+        alert("Could not save to cloud. Ensure your Worker is deployed and Binding is set.");
+    }
 }
 function closeCreation() { document.getElementById('profileCreation').style.display='none'; document.getElementById('profileGate').style.display='flex'; }
 function selectAvatar(element) {
