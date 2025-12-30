@@ -495,13 +495,35 @@ function switchType(t) {
     initApp();
 }
 
-function renderProfiles() {
-    document.getElementById('profileList').innerHTML = users.map(u => `
-        <div class="profile-item" onclick="handleProfile(${u.id})">
-            ${editMode ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-size:2rem;color:white;border-radius:4px;">✎</div>' : ''}
-            <img src="${u.avatar}"><p>${u.name}</p>
-        </div>`).join('');
+// 1. Ensure this is at the top of your script
+const MY_ACCOUNT_ID = "rishivira-account-01"; 
+
+// 2. Updated Sync Function
+async function syncAllProfiles() {
+    try {
+        // We simplified the Worker to just use /api/load-all
+        const response = await fetch(`${WORKER_URL}api/load-all`);
+        const cloudProfiles = await response.json();
+        
+        if (cloudProfiles && cloudProfiles.length > 0) {
+            // Map cloud data back to your app's 'users' format
+            users = cloudProfiles.map(p => ({
+                id: parseInt(p.profile_id), // Ensure ID stays a number for your logic
+                name: p.name,
+                avatar: p.avatar,
+                myList: [],      // Initialize empty lists if not in DB yet
+                favorites: [],
+                continueWatching: JSON.parse(p.watch_history || "[]")
+            }));
+            renderProfiles();
+        }
+    } catch (error) {
+        console.error("Cloud sync failed:", error);
+    }
 }
+
+// 3. Call it immediately
+syncAllProfiles();
 function handleProfile(id) { if(editMode) openProfileCreation(id); else login(id); }
 function toggleEditMode() { editMode = !editMode; document.getElementById('editBtn').innerText = editMode?'Done':'Settings'; renderProfiles(); }
 
