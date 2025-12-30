@@ -524,6 +524,15 @@ async function syncAllProfiles() {
 
 // 3. Call it immediately
 syncAllProfiles();
+
+function renderProfiles() {
+    document.getElementById('profileList').innerHTML = users.map(u => `
+        <div class="profile-item" onclick="handleProfile(${u.id})">
+            ${editMode ? '<div style="... border-radius:4px;">✎</div>' : ''}
+            <img src="${u.avatar}"><p>${u.name}</p>
+        </div>`).join('');
+}	
+	
 function handleProfile(id) { if(editMode) openProfileCreation(id); else login(id); }
 function toggleEditMode() { editMode = !editMode; document.getElementById('editBtn').innerText = editMode?'Done':'Settings'; renderProfiles(); }
 
