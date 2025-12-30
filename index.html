@@ -181,13 +181,14 @@
         <ul style="text-align:left; color:var(--secondary-text); font-size:0.9rem; line-height:1.6; margin-bottom:20px;">
             <li>V1.0: Basic Product, TV & Movies with User Friendly Frontend</li>
             <li>V1.1: Fixed TV Errors & Cloudflare Proxy Integration</li>
+			<li>V1.2: User Data Saved Between Devices</li>
         </ul>
 
         <button class="ctrl-btn" style="width:auto; padding:5px 15px; font-size:0.8rem; margin-bottom:10px;" onclick="const d=document.getElementById('moreDetails'); d.style.display=d.style.display==='none'?'block':'none'">Click Here For More Details</button>
 
         <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
             <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Summary</h3>
-            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The app uses a embedded Rive API to retrieve metadata and a Cloudflare Worker proxy to manage the connection between the client and content providers. This backend infrastructure is used to remove tracking scripts from the source, bypass certain provider-level restrictions, and display content. The platform includes a local profile system and a manual episode selection tool for TV series, with the underlying architecture built to support data synchronization across multiple devices via Cloudflare KV.</p>
+            <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The app uses a embedded Rive API to retrieve metadata and a Cloudflare Worker proxy to manage the connection between the client and content providers. This backend infrastructure is used to remove tracking scripts from the source, bypass certain provider-level restrictions, and display content. The platform includes a local profile system and a manual episode selection tool for TV series, with the underlying architecture built to support data synchronization across multiple devices via Cloudflare KV. State storage is employed through a D1 database created in Cloudfare to store user data.</p>
             
             <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">API Documentation</h3>
             <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.6; word-break: break-all;">
@@ -217,6 +218,7 @@
 				<li>Themes + presets</li>
 				<li>Filters</li>
 				<li>Extended customizable categories</li>
+				<li>Saved User Data</li>
 			</ul>
         </div>
 
