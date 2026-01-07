@@ -659,15 +659,27 @@ async function loadEpisodes(id, s) { const g = document.getElementById('epiGrid'
 function playTV(id, s, e, title) { const url = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; const proxy = PROXY_URL + "?url=" + encodeURIComponent(url); openPlayerOverlay(proxy, `${title} - S${s} E${e}`); }
 
 async function openPlayerOverlay(url, displayTitle, posterPath) {
-		// 1. History and List Logic (TV Version)
-	if (activeUser) {
-	    activeUser.continueWatching = [
-	        { id: url.split('tmdb=')[1]?.split('&')[0], title: displayTitle, type: 'tv' }, 
-	        ...activeUser.continueWatching.filter(x => x.title !== displayTitle)
-	    ].slice(0, 10);
-	    save(); 
-	    saveToCloud(activeUser); 
-	}
+    // 1. Precise History Logic
+    if (activeUser) {
+        // Extract the ID more reliably from the URL
+        const tmdbId = url.includes('tmdb=') ? url.split('tmdb=')[1].split('&')[0] : null;
+        
+        const historyItem = { 
+            id: tmdbId, 
+            title: displayTitle, 
+            poster_path: posterPath || '', // Ensures the image is saved
+            type: 'tv' // This prevents the empty movie popup
+        };
+
+        activeUser.continueWatching = [
+            historyItem, 
+            ...activeUser.continueWatching.filter(x => x.title !== displayTitle)
+        ].slice(0, 10);
+        
+        save();
+        saveToCloud(activeUser);
+    }
+	
     let p = document.getElementById('fsPlayerOverlay');
     if (!p) {
         p = document.createElement('div');
