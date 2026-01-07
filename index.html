@@ -671,14 +671,15 @@ async function loadEpisodes(id, s) {
 }
 
 function playTV(id, s, e, title) { 
-    // Find the poster from the modal that is currently open
+    // 1. Find the poster from the detail modal to keep Continue Watching working
     const modalImg = document.querySelector('.modal-left img');
     const poster = modalImg ? modalImg.src.replace(POSTER_PATH, '') : '';
     
+    // 2. Correct the embed URL - Ensure there are no extra spaces or missing slashes
     const url = `https://vidsrc.me/embed/tv?tmdb=${id}&sea=${s}&epi=${e}`; 
     const proxy = PROXY_URL + "?url=" + encodeURIComponent(url); 
     
-    // Pass the poster to openPlayerOverlay so it saves to D1
+    // 3. Open the player with the full metadata
     openPlayerOverlay(proxy, `${title} - S${s} E${e}`, poster); 
 }
 
