@@ -654,9 +654,33 @@ async function loadDetails(type, id) {
 
 async function renderSeasonPicker(id, total) { let h = `<select class="ctrl-btn" style="width:100%; margin-bottom:15px;" onchange="loadEpisodes(${id}, this.value)">`; for(let i=1; i<=total; i++) h += `<option value="${i}">Season ${i}</option>`; h += `</select><div id="epiGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div>`; document.getElementById('tabContent').innerHTML = h; loadEpisodes(id, 1); }
 
-async function loadEpisodes(id, s) { const g = document.getElementById('epiGrid'); g.innerHTML = "Loading..."; const r = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`); const d = await r.json(); g.innerHTML = d.episodes.map(e => `<div class="similar-card" onclick="playTV(${id}, ${s}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')"><img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;"><p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p></div>`).join(''); }
+// Locate the onclick inside the d.episodes.map loop:
+async function loadEpisodes(id, s) { 
+    const g = document.getElementById('epiGrid'); 
+    g.innerHTML = "Loading..."; 
+    const r = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`); 
+    const d = await r.json(); 
+    
+    // We pass the show ID and title, but we MUST pass a poster path too
+    // Use 'activeUser.currentPoster' or similar if you stored it, otherwise it defaults to blank.
+    g.innerHTML = d.episodes.map(e => `
+        <div class="similar-card" onclick="playTV(${id}, ${s}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')">
+            <img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;">
+            <p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p>
+        </div>`).join(''); 
+}
 
-function playTV(id, s, e, title) { const url = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; const proxy = PROXY_URL + "?url=" + encodeURIComponent(url); openPlayerOverlay(proxy, `${title} - S${s} E${e}`); }
+function playTV(id, s, e, title) { 
+    // Find the poster from the modal that is currently open
+    const modalImg = document.querySelector('.modal-left img');
+    const poster = modalImg ? modalImg.src.replace(POSTER_PATH, '') : '';
+    
+    const url = `https://vidsrc.me/embed/tv?tmdb=${id}&sea=${s}&epi=${e}`; 
+    const proxy = PROXY_URL + "?url=" + encodeURIComponent(url); 
+    
+    // Pass the poster to openPlayerOverlay so it saves to D1
+    openPlayerOverlay(proxy, `${title} - S${s} E${e}`, poster); 
+}
 
 async function openPlayerOverlay(url, displayTitle, posterPath) {
     // 1. Precise History Logic
@@ -764,12 +788,29 @@ async function save() {
 }
 function updateLists() {
     ['continueWatching', 'myList', 'favorites'].forEach(k => {
-        const row = k=='continueWatching'?'continueRow':k=='myList'?'myListRow':'favRow';
-        const sec = k=='continueWatching'?'continueSection':k=='myList'?'myListSection':'favSection';
-        if(activeUser[k] && activeUser[k].length > 0) {
+        const row = k == 'continueWatching' ? 'continueRow' : k == 'myList' ? 'myListRow' : 'favRow';
+        const sec = k == 'continueWatching' ? 'continueSection' : k == 'myList' ? 'myListSection' : 'favSection';
+        
+        if (activeUser[k] && activeUser[k].length > 0) {
             document.getElementById(sec).style.display = 'block';
-            document.getElementById(row).innerHTML = activeUser[k].map(m => `<div class="movie-card"><button class="remove-btn" onclick="activeUser['${k}']=activeUser['${k}'].filter(x=>x.id!=${m.id});save();">×</button><div onclick="navigateTo('${m.type}', ${m.id})"><img src="${POSTER_PATH+m.poster_path}"></div></div>`).join('');
-        } else document.getElementById(sec).style.display = 'none';
+            document.getElementById(row).innerHTML = activeUser[k].map(m => {
+                // Determine the click action based on type
+                // If it's a TV show, open the player directly. If it's a movie, show details.
+                const clickAction = m.type === 'tv' 
+                    ? `openPlayerOverlay('https://vidsrc.me/embed/tv?tmdb=${m.id}&sea=1&epi=1', '${m.title.replace(/'/g, "")}', '${m.poster_path}')` 
+                    : `MapsTo('movie', ${m.id})`;
+
+                return `
+                    <div class="movie-card">
+                        <button class="remove-btn" onclick="activeUser['${k}']=activeUser['${k}'].filter(x=>x.id!=${m.id});save(); event.stopPropagation();">×</button>
+                        <div onclick="${clickAction}">
+                            <img src="${POSTER_PATH + m.poster_path}" onerror="this.src='https://via.placeholder.com/200x300'">
+                        </div>
+                    </div>`;
+            }).join('');
+        } else {
+            document.getElementById(sec).style.display = 'none';
+        }
     });
 }
 
