@@ -654,57 +654,11 @@ async function loadDetails(type, id) {
 
 async function renderSeasonPicker(id, total) { let h = `<select class="ctrl-btn" style="width:100%; margin-bottom:15px;" onchange="loadEpisodes(${id}, this.value)">`; for(let i=1; i<=total; i++) h += `<option value="${i}">Season ${i}</option>`; h += `</select><div id="epiGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div>`; document.getElementById('tabContent').innerHTML = h; loadEpisodes(id, 1); }
 
-// Locate the onclick inside the d.episodes.map loop:
-async function loadEpisodes(id, s) { 
-    const g = document.getElementById('epiGrid'); 
-    g.innerHTML = "Loading..."; 
-    const r = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`); 
-    const d = await r.json(); 
-    
-    // We pass the show ID and title, but we MUST pass a poster path too
-    // Use 'activeUser.currentPoster' or similar if you stored it, otherwise it defaults to blank.
-    g.innerHTML = d.episodes.map(e => `
-        <div class="similar-card" onclick="playTV(${id}, ${s}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')">
-            <img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;">
-            <p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p>
-        </div>`).join(''); 
-}
+async function loadEpisodes(id, s) { const g = document.getElementById('epiGrid'); g.innerHTML = "Loading..."; const r = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`); const d = await r.json(); g.innerHTML = d.episodes.map(e => `<div class="similar-card" onclick="playTV(${id}, ${s}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')"><img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;"><p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p></div>`).join(''); }
 
-function playTV(id, s, e, title) { 
-    const modalImg = document.querySelector('.modal-left img');
-    const poster = modalImg ? modalImg.src.replace(POSTER_PATH, '') : '';
-    
-    // We use vidsrc.me for better TMDB compatibility
-    const targetUrl = "https://vidsrc.me/embed/tv?tmdb=" + id + "&sea=" + s + "&epi=" + e;
-    
-    // Crucial: Use encodeURIComponent to prevent the '&' symbols from confusing the Worker
-    const proxy = PROXY_URL + "?url=" + encodeURIComponent(targetUrl); 
-    
-    openPlayerOverlay(proxy, title + " - S" + s + " E" + e, poster); 
-}
+function playTV(id, s, e, title) { const url = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; const proxy = PROXY_URL + "?url=" + encodeURIComponent(url); openPlayerOverlay(proxy, `${title} - S${s} E${e}`); }
 
-async function openPlayerOverlay(url, displayTitle, posterPath) {
-    // 1. Precise History Logic
-    if (activeUser) {
-        // Extract the ID more reliably from the URL
-        const tmdbId = url.includes('tmdb=') ? url.split('tmdb=')[1].split('&')[0] : null;
-        
-        const historyItem = { 
-            id: tmdbId, 
-            title: displayTitle, 
-            poster_path: posterPath || '', // Ensures the image is saved
-            type: 'tv' // This prevents the empty movie popup
-        };
-
-        activeUser.continueWatching = [
-            historyItem, 
-            ...activeUser.continueWatching.filter(x => x.title !== displayTitle)
-        ].slice(0, 10);
-        
-        save();
-        saveToCloud(activeUser);
-    }
-	
+async function openPlayerOverlay(url, displayTitle) {
     let p = document.getElementById('fsPlayerOverlay');
     if (!p) {
         p = document.createElement('div');
@@ -715,34 +669,33 @@ async function openPlayerOverlay(url, displayTitle, posterPath) {
     p.innerHTML = `<div style="color:white;">Loading Secure Stream...</div>`;
     try {
         const r = await fetch(url);
-        if (!r.ok) throw new Error("Source unreachable");
         let h = await r.text();
+        h = h.replace(/<style([\s\S]*?)<\/style>/gi, '');
         
-        // Remove the line that strips <style> tags—TV players need them to scale properly
-        
+        // UPDATED: height:calc(100vh - 60px) and overflow:hidden for the main box
         p.innerHTML = `
-            <div style="width:100vw; height:100vh; position:relative; display:flex; flex-direction:column; background:#000;">
+            <div style="width:100vw; height:100vh; position:relative; display:flex; flex-direction:column; background:#000; justify-content:stretch;">
                 <div style="padding:10px 15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center;">
                     <span style="font-weight:bold; color:var(--accent-color);">${displayTitle}</span>
-                    <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close</button>
+                    <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button>
                 </div>
                 <div style="position:relative; width:100%; height:calc(100vh - 60px); background:#000; overflow:hidden;">
-                    <div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%;">
+                    <div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0;">
                         ${h}
                     </div>
                 </div>
             </div>`;
 
-        // Force resize after a slight delay
+        // ADDED: The force-scaling block to stop the "top-left" shrink
         setTimeout(() => {
             const frame = document.querySelector('#proxyContent iframe');
             if (frame) {
                 frame.style.cssText = "width:100% !important; height:100% !important; border:none; position:absolute; top:0; left:0;";
             }
-        }, 200);
+        }, 100);
 
     } catch (e) {
-        p.innerHTML = `<div style="color:red; padding:20px;">Error: ${e.message}. Check your Cloudflare Worker status.</div>`;
+        p.innerHTML = `<div style="color:red; padding:20px;">Error loading stream.</div>`;
     }
 }
     
@@ -790,29 +743,12 @@ async function save() {
 }
 function updateLists() {
     ['continueWatching', 'myList', 'favorites'].forEach(k => {
-        const row = k == 'continueWatching' ? 'continueRow' : k == 'myList' ? 'myListRow' : 'favRow';
-        const sec = k == 'continueWatching' ? 'continueSection' : k == 'myList' ? 'myListSection' : 'favSection';
-        
-        if (activeUser[k] && activeUser[k].length > 0) {
+        const row = k=='continueWatching'?'continueRow':k=='myList'?'myListRow':'favRow';
+        const sec = k=='continueWatching'?'continueSection':k=='myList'?'myListSection':'favSection';
+        if(activeUser[k] && activeUser[k].length > 0) {
             document.getElementById(sec).style.display = 'block';
-            document.getElementById(row).innerHTML = activeUser[k].map(m => {
-                // Determine the click action based on type
-                // If it's a TV show, open the player directly. If it's a movie, show details.
-                const clickAction = m.type === 'tv' 
-                    ? `openPlayerOverlay('https://vidsrc.me/embed/tv?tmdb=${m.id}&sea=1&epi=1', '${m.title.replace(/'/g, "")}', '${m.poster_path}')` 
-                    : `MapsTo('movie', ${m.id})`;
-
-                return `
-                    <div class="movie-card">
-                        <button class="remove-btn" onclick="activeUser['${k}']=activeUser['${k}'].filter(x=>x.id!=${m.id});save(); event.stopPropagation();">×</button>
-                        <div onclick="${clickAction}">
-                            <img src="${POSTER_PATH + m.poster_path}" onerror="this.src='https://via.placeholder.com/200x300'">
-                        </div>
-                    </div>`;
-            }).join('');
-        } else {
-            document.getElementById(sec).style.display = 'none';
-        }
+            document.getElementById(row).innerHTML = activeUser[k].map(m => `<div class="movie-card"><button class="remove-btn" onclick="activeUser['${k}']=activeUser['${k}'].filter(x=>x.id!=${m.id});save();">×</button><div onclick="navigateTo('${m.type}', ${m.id})"><img src="${POSTER_PATH+m.poster_path}"></div></div>`).join('');
+        } else document.getElementById(sec).style.display = 'none';
     });
 }
 
