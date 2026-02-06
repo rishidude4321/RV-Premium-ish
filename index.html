@@ -616,12 +616,20 @@ async function loadDetails(type, id) {
     const inL = activeUser.myList.some(x=>x.id==m.id), isF = activeUser.favorites.some(x=>x.id==m.id);
     const title = m.title || m.name;
 
-    // --- SHARED HEADER (Same for Movies & TV) ---
+// --- SHARED HEADER (Updated with Runtime) ---
+    const runtimeVal = type === 'movie' ? m.runtime : (m.episode_run_time ? m.episode_run_time[0] : null);
+    const displayRuntime = runtimeVal ? `<span style="margin-left:15px; color:var(--secondary-text); font-weight:bold; font-size:0.9rem;">🕒 ${formatRuntime(runtimeVal)}</span>` : '';
+
     let html = `
     <div class="modal-left"><img src="${POSTER_PATH+m.poster_path}"></div>
     <div class="modal-right">
         <h2>${title}</h2>
-        <div style="margin:10px 0;"><span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> <span class="rating-badge critic">⭐ ${m.vote_average.toFixed(1)}</span></div>
+        <div style="margin:10px 0; display:flex; align-items:center;">
+            <span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> 
+            <span class="rating-badge critic" style="margin-left:10px;">⭐ ${m.vote_average.toFixed(1)}</span>
+			
+            ${displayRuntime}
+        </div>
         <p style="font-size:0.9rem; max-height:100px; overflow-y:auto; margin-bottom:15px;">${m.overview}</p>
         <div style="display:flex; gap:10px; margin-bottom:20px;">
             ${type === 'movie' ? `<button class="ctrl-btn" onclick="playContent(${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','movie')">Watch Now</button>` : ''}
@@ -1018,6 +1026,14 @@ async function saveProfile() {
     }
 }
 function closeCreation() { document.getElementById('profileCreation').style.display='none'; document.getElementById('profileGate').style.display='flex'; }
+
+function formatRuntime(n) {
+    if (!n) return '';
+    const hours = Math.floor(n / 60);
+    const mins = n % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
+
 function selectAvatar(element) {
     // Remove border from all avatars
     document.querySelectorAll('#avatarGallery img').forEach(img => img.style.borderColor = 'transparent');
