@@ -936,6 +936,21 @@ async function deleteProfile(id) {
         }
     }
 }
+
+// Algorithm: Reverse → Subtract 1 from each char → Hex decode
+function decodeHexFormat(encoded) {
+  const reversed = encoded.split('').reverse().join('');
+  let adjusted = '';
+  for (let i = 0; i < reversed.length; i++) {
+    adjusted += String.fromCharCode(reversed.charCodeAt(i) - 1);
+  }
+  const hexClean = adjusted.replace(/[^0-9a-fA-F]/g, '');
+  let decoded = '';
+  for (let i = 0; i < hexClean.length; i += 2) {
+    decoded += String.fromCharCode(parseInt(hexClean.substr(i, 2), 16));
+  }
+  return decoded;
+}
 	
 function decodeSource(encoded) {
     // Logic from your "VidSrc" notes: Reverse -> Subtract 1 -> Hex to ASCII
