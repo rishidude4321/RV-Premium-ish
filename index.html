@@ -616,12 +616,20 @@ async function loadDetails(type, id) {
     const inL = activeUser.myList.some(x=>x.id==m.id), isF = activeUser.favorites.some(x=>x.id==m.id);
     const title = m.title || m.name;
 
-    // --- SHARED HEADER (Same for Movies & TV) ---
+// --- SHARED HEADER (Updated with Runtime) ---
+    const runtimeVal = type === 'movie' ? m.runtime : (m.episode_run_time ? m.episode_run_time[0] : null);
+    const displayRuntime = runtimeVal ? `<span style="margin-left:15px; color:var(--secondary-text); font-weight:bold; font-size:0.9rem;">🕒 ${formatRuntime(runtimeVal)}</span>` : '';
+
     let html = `
     <div class="modal-left"><img src="${POSTER_PATH+m.poster_path}"></div>
     <div class="modal-right">
         <h2>${title}</h2>
-        <div style="margin:10px 0;"><span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> <span class="rating-badge critic">⭐ ${m.vote_average.toFixed(1)}</span></div>
+        <div style="margin:10px 0; display:flex; align-items:center;">
+            <span class="rating-badge tomato">🍅 ${Math.floor(m.vote_average*10)}%</span> 
+            <span class="rating-badge critic" style="margin-left:10px;">⭐ ${m.vote_average.toFixed(1)}</span>
+			
+            ${displayRuntime}
+        </div>
         <p style="font-size:0.9rem; max-height:100px; overflow-y:auto; margin-bottom:15px;">${m.overview}</p>
         <div style="display:flex; gap:10px; margin-bottom:20px;">
             ${type === 'movie' ? `<button class="ctrl-btn" onclick="playContent(${m.id},'${title.replace(/'/g,"")}','${m.poster_path}','movie')">Watch Now</button>` : ''}
@@ -656,7 +664,21 @@ async function renderSeasonPicker(id, total) { let h = `<select class="ctrl-btn"
 
 async function loadEpisodes(id, s) { const g = document.getElementById('epiGrid'); g.innerHTML = "Loading..."; const r = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`); const d = await r.json(); g.innerHTML = d.episodes.map(e => `<div class="similar-card" onclick="playTV(${id}, ${s}, ${e.episode_number}, '${e.name.replace(/'/g,"")}')"><img src="${e.still_path ? POSTER_PATH+e.still_path : 'https://via.placeholder.com/140x80'}" style="width:100%; border-radius:4px;"><p style="font-size:0.7rem; font-weight:bold; margin-top:5px;">E${e.episode_number}: ${e.name}</p></div>`).join(''); }
 
-function playTV(id, s, e, title) { const url = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; const proxy = PROXY_URL + "?url=" + encodeURIComponent(url); openPlayerOverlay(proxy, `${title} - S${s} E${e}`); }
+const PROVIDERS = {
+    primary: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
+    backup: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&sea=${s}&epi=${e}`,
+    alternate: (id, s, e) => `https://2embed.cc/embedtv/${id}&s=${s}&e=${e}`
+};
+
+function playTV(id, s, e, title, type = 'primary') {
+    const url = PROVIDERS[type](id, s, e);
+    const proxy = PROXY_URL + "?url=" + encodeURIComponent(url);
+    
+    // Check console to see the final URL being sent to your worker
+    console.log("Requesting via Worker:", proxy);
+    
+    openPlayerOverlay(proxy, `${title} - S${s} E${e}`);
+}
 
 async function openPlayerOverlay(url, displayTitle) {
     let p = document.getElementById('fsPlayerOverlay');
@@ -1018,6 +1040,14 @@ async function saveProfile() {
     }
 }
 function closeCreation() { document.getElementById('profileCreation').style.display='none'; document.getElementById('profileGate').style.display='flex'; }
+
+function formatRuntime(n) {
+    if (!n) return '';
+    const hours = Math.floor(n / 60);
+    const mins = n % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
+
 function selectAvatar(element) {
     // Remove border from all avatars
     document.querySelectorAll('#avatarGallery img').forEach(img => img.style.borderColor = 'transparent');
