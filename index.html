@@ -680,6 +680,14 @@ function playTV(id, s, e, title, type = 'primary') {
     openPlayerOverlay(proxy, `${title} - S${s} E${e}`);
 }
 
+// Add a "Repair" button in your HTML
+function addRepairButton(originalUrl) {
+    const btn = document.createElement('button');
+    btn.innerText = "Try Direct Link (If Player Fails)";
+    btn.onclick = () => window.open(originalUrl, '_blank');
+    document.body.appendChild(btn); 
+}
+
 async function openPlayerOverlay(url, displayTitle) {
     let p = document.getElementById('fsPlayerOverlay');
     if (!p) {
