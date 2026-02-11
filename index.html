@@ -670,14 +670,20 @@ const PROVIDERS = {
     alternate: (id, s, e) => `https://2embed.cc/embedtv/${id}&s=${s}&e=${e}`
 };
 
-function playTV(id, s, e, title, type = 'primary') {
-    const url = PROVIDERS[type](id, s, e);
-    const proxy = PROXY_URL + "?url=" + encodeURIComponent(url);
+function playTV(id, s, e, title) {
+    // Primary Source
+    const vidsrcUrl = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
     
-    // Check console to see the final URL being sent to your worker
-    console.log("Requesting via Worker:", proxy);
+    // Alternative Source (different provider)
+    const altUrl = `https://vidsrc.me/embed/tv?tmdb=${id}&sea=${s}&epi=${e}`;
+
+    const proxy = PROXY_URL + "?url=" + encodeURIComponent(vidsrcUrl);
     
     openPlayerOverlay(proxy, `${title} - S${s} E${e}`);
+
+    // LOGIC: If the user has trouble, they can switch. 
+    // You could add a button to the overlay that calls:
+    // openPlayerOverlay(PROXY_URL + "?url=" + encodeURIComponent(altUrl), title);
 }
 
 // Add a "Repair" button in your HTML
