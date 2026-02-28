@@ -6,6 +6,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
+const { extractDecodedStreamUrl, sanitizeEmbedHtml } = require('./streamDecode.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,7 +44,7 @@ app.get(/^\/api\/tmdb\/?(.*)/, async (req, res) => {
   }
 });
 
-// --- Proxy de stream (Worker) ---
+// --- Proxy de stream (Worker): extrae URL directa para evitar anuncios/redirects ---
 app.get('/api/proxy', async (req, res) => {
   const targetUrl = req.query.url;
   if (!targetUrl) return res.status(400).send('Missing url');
@@ -51,7 +52,13 @@ app.get('/api/proxy', async (req, res) => {
     const opts = { headers: {} };
     if (CLOUDFLARE_API_TOKEN) opts.headers['Authorization'] = 'Bearer ' + CLOUDFLARE_API_TOKEN;
     const r = await fetch(WORKER_PROXY_URL + '?url=' + encodeURIComponent(targetUrl), opts);
-    const html = await r.text();
+    let html = await r.text();
+    const directUrl = extractDecodedStreamUrl(html);
+    if (directUrl) {
+      html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"></head><body style="margin:0;overflow:hidden;"><iframe src="${directUrl.replace(/"/g, '&quot;')}" style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe></body></html>`;
+    } else {
+      html = sanitizeEmbedHtml(html);
+    }
     res.set('Content-Type', 'text/html');
     res.send(html);
   } catch (e) {
@@ -105,6 +112,35 @@ app.post('/api/profiles/delete', async (req, res) => {
   } catch (e) {
     res.status(502).json({ error: 'Profile delete failed' });
   }
+});
+
+// --- Recomendaciones por usuario (similar a lo que ha visto/guardado) ---
+app.post('/api/recommendations', async (req, res) => {
+  if (!TMDB_API_KEY) return res.status(503).json({ error: 'TMDB_API_KEY not configured' });
+  const { items = [], excludeIds = [] } = req.body || {};
+  const excludeSet = new Set(excludeIds.map(String));
+  const seen = new Set();
+  const results = [];
+  const maxSeeds = 6;
+  const seeds = items.slice(0, maxSeeds);
+  for (const { id, type } of seeds) {
+    if (!id || !type) continue;
+    try {
+      const path = type === 'movie' ? `movie/${id}/similar` : `tv/${id}/similar`;
+      const r = await fetch(`https://api.themoviedb.org/3/${path}?api_key=${TMDB_API_KEY}`);
+      const data = await r.json();
+      const list = data.results || [];
+      for (const m of list) {
+        const mid = String(m.id);
+        if (seen.has(mid) || excludeSet.has(mid)) continue;
+        seen.add(mid);
+        results.push({ ...m, media_type: type });
+        if (results.length >= 20) break;
+      }
+      if (results.length >= 20) break;
+    } catch (_) {}
+  }
+  res.json(results);
 });
 
 // Ruta principal: enviar index del frontend

@@ -1,8 +1,10 @@
 /**
  * Reproductor: películas, series (episodios), overlay a pantalla completa.
+ * Usa decodeHexFormat para obtener URL directa del stream y reducir anuncios.
  */
 import * as api from './api.js';
 import { state } from './state.js';
+import { extractDecodedStreamUrl } from './streamDecode.js';
 
 const C = window.RV_CONFIG || {};
 
@@ -29,6 +31,10 @@ async function playContent(id, title, posterPath, type) {
   playerDiv.innerHTML = '<div style="color:white; font-family:sans-serif;">Loading Secure Stream...</div>';
   try {
     const html = await api.getProxyStream(targetUrl);
+    const directUrl = extractDecodedStreamUrl(html);
+    const finalHtml = directUrl
+      ? `<iframe src="${directUrl}" style="width:100%; height:100%; border:none; position:absolute; top:0; left:0;" allowfullscreen></iframe>`
+      : html;
     playerDiv.innerHTML = `
       <div style="width:100vw; height:100vh; position:relative; display:flex; flex-direction:column; background:#000;">
         <div style="padding:15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center;">
@@ -37,7 +43,7 @@ async function playContent(id, title, posterPath, type) {
         </div>
         <div style="position:relative; width:100%; height:calc(100vh - 60px); background:#000; overflow:hidden;">
           <div id="proxyContent" style="position:absolute; inset:0; width:100%; height:100%;">
-            ${html}
+            ${finalHtml}
           </div>
         </div>
       </div>`;
@@ -66,7 +72,10 @@ async function openPlayerOverlay(targetUrl, displayTitle) {
   p.innerHTML = '<div style="color:white;">Loading Secure Stream...</div>';
   try {
     const h = await api.getProxyStream(targetUrl);
-    const hClean = h.replace(/<style[\s\S]*?<\/style>/gi, '');
+    const directUrl = extractDecodedStreamUrl(h);
+    const hClean = directUrl
+      ? `<iframe src="${directUrl}" style="width:100%; height:100%; border:none; position:absolute; top:0; left:0;" allowfullscreen></iframe>`
+      : h.replace(/<style[\s\S]*?<\/style>/gi, '');
     p.innerHTML = `
       <div style="width:100vw; height:100vh; position:relative; display:flex; flex-direction:column; background:#000;">
         <div style="padding:10px 15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center;">

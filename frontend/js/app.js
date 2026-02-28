@@ -96,6 +96,36 @@ async function initApp() {
   const base = state.curT === 'multi' ? 'trending/all/day' : `trending/${state.curT}/day`;
   const hData = await api.getTmdb(base);
   setupHero(hData.results[0]);
+
+  const user = state.activeUser;
+  const recommendationSeeds = [];
+  const excludeIds = new Set();
+  if (user) {
+    const cw = (user.continueWatching || []).slice(0, 5).map((m) => ({ id: m.id, type: m.type || 'movie' }));
+    const fav = (user.favorites || []).slice(0, 3).map((m) => ({ id: m.id, type: m.type || 'movie' }));
+    const list = (user.myList || []).slice(0, 3).map((m) => ({ id: m.id, type: m.type || 'movie' }));
+    const all = [...cw, ...fav, ...list];
+    const byId = new Map();
+    for (const it of all) {
+      byId.set(String(it.id), it);
+      excludeIds.add(it.id);
+    }
+    recommendationSeeds.push(...byId.values());
+  }
+  if (recommendationSeeds.length > 0) {
+    try {
+      const recs = await api.getRecommendations(recommendationSeeds, [...excludeIds]);
+      if (recs.length > 0) {
+        const recSection = document.createElement('div');
+        recSection.className = 'category-section';
+        recSection.innerHTML = `
+          <div class="category-title"><span>Recommended for you</span></div>
+          <div class="movie-row">${recs.map((m) => createCard(m)).join('')}</div>`;
+        dynamic.appendChild(recSection);
+      }
+    } catch (_) {}
+  }
+
   const cats = state.curT === 'tv' ? tvCategoryData : categoryData;
   for (const c of cats) {
     const url = buildCategoryUrl(c);
