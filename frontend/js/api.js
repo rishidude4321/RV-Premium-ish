@@ -75,4 +75,38 @@ async function profilesDelete(id) {
   return r;
 }
 
-export { getTmdb, getProxyStream, profilesSave, profilesLoad, profilesLoadAll, profilesDelete };
+async function getRecommendations(items, excludeIds = []) {
+  if (!items || items.length === 0) return [];
+  if (C.USE_BACKEND) {
+    const r = await fetch('/api/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items, excludeIds }),
+    });
+    if (!r.ok) return [];
+    return r.json();
+  }
+  const excludeSet = new Set(excludeIds.map(String));
+  const seen = new Set();
+  const results = [];
+  const maxSeeds = 6;
+  for (const { id, type } of items.slice(0, maxSeeds)) {
+    if (!id || !type) continue;
+    try {
+      const path = type === 'movie' ? `movie/${id}/similar` : `tv/${id}/similar`;
+      const data = await getTmdb(path);
+      const list = data.results || [];
+      for (const m of list) {
+        const mid = String(m.id);
+        if (seen.has(mid) || excludeSet.has(mid)) continue;
+        seen.add(mid);
+        results.push({ ...m, media_type: type });
+        if (results.length >= 20) break;
+      }
+      if (results.length >= 20) break;
+    } catch (_) {}
+  }
+  return results;
+}
+
+export { getTmdb, getProxyStream, profilesSave, profilesLoad, profilesLoadAll, profilesDelete, getRecommendations };
