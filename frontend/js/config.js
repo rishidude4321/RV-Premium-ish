@@ -4,6 +4,8 @@
  */
 window.RV_CONFIG = {
   USE_BACKEND: true,
+  // Base del backend cuando frontend corre en otro puerto (ej. 5173/5500)
+  API_BASE: 'http://localhost:3000',
   TMDB_API_KEY: '31b33cade35075a7a011c88568bb1070',
   WORKER_URL: 'https://rv-plus.rishivira4321.workers.dev/',
   IMG_PATH: 'https://image.tmdb.org/t/p/w1280',

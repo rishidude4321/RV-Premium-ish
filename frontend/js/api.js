@@ -3,9 +3,16 @@
  */
 const C = window.RV_CONFIG || {};
 
+function apiUrl(path) {
+  if (!C.USE_BACKEND) return path;
+  const base = (C.API_BASE || '').replace(/\/$/, '');
+  if (!base) return path;
+  return base + (path.startsWith('/') ? path : '/' + path);
+}
+
 function tmdbPath(path, query = '') {
   const q = query ? (query.startsWith('?') ? query : '?' + query) : '';
-  if (C.USE_BACKEND) return `/api/tmdb/${path}${q}`;
+  if (C.USE_BACKEND) return apiUrl(`/api/tmdb/${path}${q}`);
   return `https://api.themoviedb.org/3/${path}?api_key=${C.TMDB_API_KEY}${query ? '&' + query.replace(/^\?/, '') : ''}`;
 }
 
@@ -18,7 +25,7 @@ async function getTmdb(path, query = '') {
 
 async function getProxyStream(targetUrl) {
   if (C.USE_BACKEND) {
-    const r = await fetch('/api/proxy?url=' + encodeURIComponent(targetUrl));
+    const r = await fetch(apiUrl('/api/proxy?url=' + encodeURIComponent(targetUrl)));
     if (!r.ok) throw new Error('Proxy failed');
     return r.text();
   }
@@ -28,7 +35,7 @@ async function getProxyStream(targetUrl) {
 }
 
 async function profilesSave(body) {
-  const url = C.USE_BACKEND ? '/api/profiles/save' : C.WORKER_URL + 'api/save';
+  const url = C.USE_BACKEND ? apiUrl('/api/profiles/save') : C.WORKER_URL + 'api/save';
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -39,14 +46,14 @@ async function profilesSave(body) {
 }
 
 async function profilesLoad(id) {
-  const url = C.USE_BACKEND ? '/api/profiles/load?id=' + encodeURIComponent(id) : C.WORKER_URL + 'api/load?id=' + encodeURIComponent(id);
+  const url = C.USE_BACKEND ? apiUrl('/api/profiles/load?id=' + encodeURIComponent(id)) : C.WORKER_URL + 'api/load?id=' + encodeURIComponent(id);
   const r = await fetch(url);
   if (!r.ok) throw new Error('Load failed');
   return r.json();
 }
 
 async function profilesLoadAll() {
-  const url = C.USE_BACKEND ? '/api/profiles/load-all' : C.WORKER_URL + 'api/load-all';
+  const url = C.USE_BACKEND ? apiUrl('/api/profiles/load-all') : C.WORKER_URL + 'api/load-all';
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
   try {
@@ -65,7 +72,7 @@ async function profilesLoadAll() {
 }
 
 async function profilesDelete(id) {
-  const url = C.USE_BACKEND ? '/api/profiles/delete' : C.WORKER_URL + 'api/delete';
+  const url = C.USE_BACKEND ? apiUrl('/api/profiles/delete') : C.WORKER_URL + 'api/delete';
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -78,7 +85,7 @@ async function profilesDelete(id) {
 async function getRecommendations(items, excludeIds = []) {
   if (!items || items.length === 0) return [];
   if (C.USE_BACKEND) {
-    const r = await fetch('/api/recommendations', {
+    const r = await fetch(apiUrl('/api/recommendations'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items, excludeIds }),
@@ -109,4 +116,20 @@ async function getRecommendations(items, excludeIds = []) {
   return results;
 }
 
-export { getTmdb, getProxyStream, profilesSave, profilesLoad, profilesLoadAll, profilesDelete, getRecommendations };
+async function getSportsChannels() {
+  if (!C.USE_BACKEND) return [];
+  const r = await fetch(apiUrl('/api/sports/channels'));
+  if (!r.ok) return [];
+  return r.json();
+}
+
+export {
+  getTmdb,
+  getProxyStream,
+  profilesSave,
+  profilesLoad,
+  profilesLoadAll,
+  profilesDelete,
+  getRecommendations,
+  getSportsChannels,
+};

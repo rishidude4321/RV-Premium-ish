@@ -11,6 +11,7 @@ const { extractDecodedStreamUrl, sanitizeEmbedHtml } = require('./streamDecode.j
 const app = express();
 const PORT = process.env.PORT || 3000;
 const TMDB_API_KEY = process.env.TMDB_API_KEY || '';
+const DLHD_API_KEY = process.env.DLHD_API_KEY || '';
 const WORKER_PROXY_URL = (process.env.WORKER_PROXY_URL || 'https://rv-plus.rishivira4321.workers.dev/').replace(/\/?$/, '/');
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
 
@@ -141,6 +142,43 @@ app.post('/api/recommendations', async (req, res) => {
     } catch (_) {}
   }
   res.json(results);
+});
+
+// --- Sports (DaddyLive / DLHD) ---
+async function fetchDlhd(endpoint) {
+  if (!DLHD_API_KEY) {
+    throw new Error('DLHD_API_KEY not configured');
+  }
+  const url = `https://dlhd.link/daddyapi.php?key=${encodeURIComponent(DLHD_API_KEY)}&endpoint=${encodeURIComponent(endpoint)}`;
+  const r = await fetch(url);
+  if (!r.ok) {
+    throw new Error(`DLHD API error: ${r.status}`);
+  }
+  const data = await r.json();
+  if (!data || data.success === false) {
+    throw new Error(`DLHD API error: ${data && (data.error || data.message)}`);
+  }
+  return data;
+}
+
+// Lista de canales
+app.get('/api/sports/channels', async (req, res) => {
+  try {
+    const data = await fetchDlhd('channels');
+    res.json(data.data || []);
+  } catch (e) {
+    res.status(503).json({ error: 'Sports channels failed', message: e.message });
+  }
+});
+
+// Agenda (no usada aún en UI, pero disponible)
+app.get('/api/sports/schedule', async (req, res) => {
+  try {
+    const data = await fetchDlhd('schedule');
+    res.json(data.data || {});
+  } catch (e) {
+    res.status(503).json({ error: 'Sports schedule failed', message: e.message });
+  }
 });
 
 // Ruta principal: enviar index del frontend
