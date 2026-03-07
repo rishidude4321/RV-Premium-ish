@@ -242,8 +242,9 @@ async function loadDetails(type, id) {
         ${displayRuntime}
       </div>
       <p style="font-size:0.9rem; max-height:100px; overflow-y:auto; margin-bottom:15px;">${m.overview || ''}</p>
-      <div style="display:flex; gap:10px; margin-bottom:20px;">
+      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
         ${type === 'movie' ? `<button class="ctrl-btn" onclick="window.playContent(${m.id},'${title}','${posterPath}','movie')">Watch Now</button>` : ''}
+        ${C.STREAM_TURBO_PROXY_URL ? `<button class="ctrl-btn" onclick="window.playTurboStream('${title.replace(/'/g, "\\'")}', ${C.TURBO_DEFAULT_START_SEGMENT ?? 1258})">Play Turbo</button>` : ''}
         <button id="lBtn" class="ctrl-btn ${inL ? 'active-btn' : ''}" onclick="window.toggle('myList', ${m.id},'${title}','${posterPath}','${type}')">${inL ? '✓ List' : '+ List'}</button>
         <button id="fBtn" class="ctrl-btn ${isF ? 'active-btn' : ''}" onclick="window.toggle('favorites', ${m.id},'${title}','${posterPath}','${type}')">+ Favorite</button>
       </div>`;
@@ -550,6 +551,7 @@ window.saveTheme = theme.saveTheme;
 window.playContent = player.playContent;
 window.playTV = player.playTV;
 window.openPlayerOverlay = player.openPlayerOverlay;
+window.playTurboStream = player.playTurboStream;
 window.openSports = openSportsHome;
 window.openSportsChannel = openSportsChannel;
 window.switchType = switchType;

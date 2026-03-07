@@ -69,6 +69,103 @@ async function renderHlsPlayer(containerEl, titleText, streamUrl) {
   }
 }
 
+/**
+ * Reproductor con MediaSource que consume segmentos page-N.html del worker turbo.
+ * Reduce buffering al pre-cargar segmentos desde Cloudflare (cache del worker).
+ */
+async function renderTurboMediaSourcePlayer(containerEl, titleText, startSegment) {
+  const turboUrl = (C.STREAM_TURBO_PROXY_URL || '').replace(/\/?$/, '/');
+  if (!turboUrl) {
+    containerEl.innerHTML = '<div style="color:#f00;padding:20px;">STREAM_TURBO_PROXY_URL not configured.</div>';
+    return;
+  }
+
+  let currentSegment = typeof startSegment === 'number' ? startSegment : (C.TURBO_DEFAULT_START_SEGMENT ?? 1258);
+  const BUFFER_SECONDS = 15;
+
+  containerEl.innerHTML = `
+    <div style="width:100vw; height:100vh; position:relative; display:flex; flex-direction:column; background:#000;">
+      <div style="padding:15px; background:rgba(30,30,30,0.9); display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:bold; color:var(--accent-color);">${titleText}</span>
+        <button class="ctrl-btn" onclick="document.getElementById('fsPlayerOverlay').remove()" style="padding:5px 15px;">✕ Close Player</button>
+      </div>
+      <div id="rv-turbo-status" style="color:#0f0; margin:0 15px; font-size:0.9em;"></div>
+      <div style="position:relative; width:100%; height:calc(100vh - 80px); background:#000; overflow:hidden;">
+        <video id="rv-video" controls autoplay playsinline style="width:100%;height:100%;object-fit:contain;background:#000;"></video>
+      </div>
+    </div>`;
+
+  const video = document.getElementById('rv-video');
+  const statusEl = document.getElementById('rv-turbo-status');
+  if (!video || !statusEl) return;
+
+  function setStatus(text, isError = false) {
+    if (statusEl) {
+      statusEl.textContent = text;
+      statusEl.style.color = isError ? '#f00' : '#0f0';
+    }
+  }
+
+  const ms = new MediaSource();
+  video.src = URL.createObjectURL(ms);
+
+  ms.addEventListener('sourceopen', async () => {
+    const mime = 'video/mp2t; codecs="avc1.42E01E,mp4a.40.2"';
+    if (!MediaSource.isTypeSupported(mime)) {
+      setStatus('Browser does not support video/mp2t for this codec.', true);
+      return;
+    }
+    const sb = ms.addSourceBuffer(mime);
+
+    async function loadNextSegment() {
+      setStatus(`Fetching segment: page-${currentSegment}.html`);
+      try {
+        const response = await fetch(`${turboUrl}page-${currentSegment}.html`);
+        if (!response.ok) throw new Error('Worker returned ' + response.status);
+        const data = await response.arrayBuffer();
+        sb.appendBuffer(data);
+        currentSegment++;
+      } catch (e) {
+        setStatus('Stream error: ' + (e.message || String(e)), true);
+      }
+    }
+
+    sb.addEventListener('updateend', () => {
+      if (sb.updating) return;
+      if (video.buffered.length > 0) {
+        const timeLeft = video.buffered.end(0) - video.currentTime;
+        if (timeLeft < BUFFER_SECONDS) loadNextSegment();
+      } else {
+        loadNextSegment();
+      }
+    });
+
+    await loadNextSegment();
+  });
+
+  video.addEventListener('error', () => {
+    setStatus('Video error: ' + (video.error ? video.error.message : 'unknown'), true);
+  });
+}
+
+/**
+ * Abre el overlay y reproduce por turbo (segmentos page-N.html del worker).
+ * @param {string} titleText - Título a mostrar
+ * @param {number} [startSegment] - Número de segmento inicial (por defecto TURBO_DEFAULT_START_SEGMENT)
+ */
+async function playTurboStream(titleText, startSegment) {
+  let playerDiv = document.getElementById('fsPlayerOverlay');
+  if (!playerDiv) {
+    playerDiv = document.createElement('div');
+    playerDiv.id = 'fsPlayerOverlay';
+    playerDiv.style.cssText = 'position:fixed; inset:0; z-index:10000; background:#000; display:flex; justify-content:center; align-items:center; overflow:hidden;';
+    document.body.appendChild(playerDiv);
+  }
+  playerDiv.innerHTML = '<div style="color:white;">Loading Turbo Stream...</div>';
+  const seg = startSegment ?? C.TURBO_DEFAULT_START_SEGMENT ?? 1258;
+  await renderTurboMediaSourcePlayer(playerDiv, titleText, seg);
+}
+
 async function playContent(id, title, posterPath, type) {
   if (!state.activeUser) return;
   state.activeUser.continueWatching = [
@@ -132,7 +229,14 @@ function playTV(id, s, e, title) {
   openPlayerOverlay(vidsrcUrl, `${title} - S${s} E${e}`);
 }
 
-async function openPlayerOverlay(targetUrl, displayTitle) {
+async function openPlayerOverlay(targetUrl, displayTitle, options = {}) {
+  const useTurbo = options.useTurbo && (options.startSegment != null || (C.TURBO_DEFAULT_START_SEGMENT != null));
+  if (useTurbo && (!targetUrl || targetUrl === '')) {
+    const seg = options.startSegment ?? C.TURBO_DEFAULT_START_SEGMENT ?? 1258;
+    await playTurboStream(displayTitle || 'Turbo Stream', seg);
+    return;
+  }
+
   let p = document.getElementById('fsPlayerOverlay');
   if (!p) {
     p = document.createElement('div');
@@ -146,6 +250,11 @@ async function openPlayerOverlay(targetUrl, displayTitle) {
     const directUrl = extractDecodedStreamUrl(h);
 
     if (directUrl && directUrl.includes('.m3u8')) {
+      if (useTurbo && C.STREAM_TURBO_PROXY_URL) {
+        const seg = options.startSegment ?? C.TURBO_DEFAULT_START_SEGMENT ?? 1258;
+        await renderTurboMediaSourcePlayer(p, displayTitle, seg);
+        return;
+      }
       const streamUrl = C.WORKER_URL
         ? C.WORKER_URL + '?url=' + encodeURIComponent(directUrl)
         : directUrl;
@@ -177,4 +286,4 @@ async function openPlayerOverlay(targetUrl, displayTitle) {
   }
 }
 
-export { playContent, playTV, openPlayerOverlay };
+export { playContent, playTV, openPlayerOverlay, playTurboStream };
