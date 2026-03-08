@@ -1,17 +1,18 @@
 /**
  * Backend RV Plus - Express server
- * Proxy a TMDB, proxy de streams (Worker) y API de perfiles.
+ * Proxy a TMDB, proxy de streams (Worker), API de perfiles y perfiles en MongoDB (Auth0).
  */
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
+const { auth } = require('express-oauth2-jwt-bearer');
 const { extractDecodedStreamUrl, sanitizeEmbedHtml } = require('./streamDecode.js');
+const { getProfiles, saveProfiles } = require('./db.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const TMDB_API_KEY = process.env.TMDB_API_KEY || '';
-const DLHD_API_KEY = process.env.DLHD_API_KEY || '';
 const WORKER_PROXY_URL = (process.env.WORKER_PROXY_URL || 'https://rv-plus.rishivira4321.workers.dev/').replace(/\/?$/, '/');
 const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
 
@@ -23,6 +24,61 @@ function workerHeaders() {
 
 app.use(cors());
 app.use(express.json());
+
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || '';
+const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID || '';
+const AUTH0_CALLBACK_URL = process.env.AUTH0_CALLBACK_URL || '';
+
+const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE || '';
+const MONGODB_URI = process.env.MONGODB_URI || '';
+
+// Auth0: config pública para el frontend (domain + clientId, audience para token). Sin secretos.
+app.get('/api/auth/config', (req, res) => {
+  if (!AUTH0_DOMAIN || !AUTH0_CLIENT_ID) {
+    return res.json({});
+  }
+  res.json({
+    domain: AUTH0_DOMAIN,
+    clientId: AUTH0_CLIENT_ID,
+    callbackUrl: AUTH0_CALLBACK_URL || req.protocol + '://' + req.get('host'),
+    audience: AUTH0_AUDIENCE || undefined,
+  });
+});
+
+// JWT check para rutas de perfiles en MongoDB (solo si Auth0 + Audience + MongoDB están configurados)
+let jwtCheck;
+if (AUTH0_DOMAIN && AUTH0_AUDIENCE) {
+  jwtCheck = auth({
+    audience: AUTH0_AUDIENCE,
+    issuerBaseURL: 'https://' + AUTH0_DOMAIN,
+  });
+}
+
+// Perfiles del usuario autenticado (MongoDB) — requieren Bearer token
+if (MONGODB_URI && jwtCheck) {
+  app.get('/api/profiles/me', jwtCheck, async (req, res) => {
+    try {
+      const sub = req.auth?.payload?.sub;
+      if (!sub) return res.status(401).json({ error: 'Missing sub' });
+      const profiles = await getProfiles(sub);
+      res.json(profiles || []);
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to load profiles' });
+    }
+  });
+
+  app.put('/api/profiles/me', jwtCheck, async (req, res) => {
+    try {
+      const sub = req.auth?.payload?.sub;
+      if (!sub) return res.status(401).json({ error: 'Missing sub' });
+      const profiles = Array.isArray(req.body?.profiles) ? req.body.profiles : [];
+      await saveProfiles(sub, profiles);
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to save profiles' });
+    }
+  });
+}
 
 // Servir frontend estático
 const frontendPath = path.join(__dirname, '..', 'frontend');
@@ -144,43 +200,6 @@ app.post('/api/recommendations', async (req, res) => {
   res.json(results);
 });
 
-// --- Sports (DaddyLive / DLHD) ---
-async function fetchDlhd(endpoint) {
-  if (!DLHD_API_KEY) {
-    throw new Error('DLHD_API_KEY not configured');
-  }
-  const url = `https://dlhd.link/daddyapi.php?key=${encodeURIComponent(DLHD_API_KEY)}&endpoint=${encodeURIComponent(endpoint)}`;
-  const r = await fetch(url);
-  if (!r.ok) {
-    throw new Error(`DLHD API error: ${r.status}`);
-  }
-  const data = await r.json();
-  if (!data || data.success === false) {
-    throw new Error(`DLHD API error: ${data && (data.error || data.message)}`);
-  }
-  return data;
-}
-
-// Lista de canales
-app.get('/api/sports/channels', async (req, res) => {
-  try {
-    const data = await fetchDlhd('channels');
-    res.json(data.data || []);
-  } catch (e) {
-    res.status(503).json({ error: 'Sports channels failed', message: e.message });
-  }
-});
-
-// Agenda (no usada aún en UI, pero disponible)
-app.get('/api/sports/schedule', async (req, res) => {
-  try {
-    const data = await fetchDlhd('schedule');
-    res.json(data.data || {});
-  } catch (e) {
-    res.status(503).json({ error: 'Sports schedule failed', message: e.message });
-  }
-});
-
 // Ruta principal: enviar index del frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
@@ -189,4 +208,8 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`RV Plus backend running at http://localhost:${PORT}`);
   if (!TMDB_API_KEY) console.warn('TMDB_API_KEY not set: frontend will use its own config for TMDB.');
+  if (AUTH0_DOMAIN && AUTH0_CLIENT_ID) console.log('Auth0: configured (callback ' + (AUTH0_CALLBACK_URL || 'auto') + ')');
+  else console.warn('Auth0: not configured (set AUTH0_DOMAIN, AUTH0_CLIENT_ID in .env)');
+  if (MONGODB_URI) console.log('MongoDB: configured');
+  else console.warn('MongoDB: not configured (set MONGODB_URI in .env for profiles)');
 });

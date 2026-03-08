@@ -1,11 +1,13 @@
 /**
  * App principal: categorías, filas, detalle, modal, búsqueda, filtros, sincronización.
+ * Auth0: si está configurado, se muestra pantalla de login/registro antes de "Who's watching?".
  */
 import * as api from './api.js';
-import { state, persistUsers } from './state.js';
+import { state, persistUsers, setAuth0User } from './state.js';
 import * as theme from './theme.js';
 import * as profiles from './profiles.js';
 import * as player from './player.js';
+import { auth } from './auth.js';
 
 const C = window.RV_CONFIG || {};
 const POSTER_PATH = C.POSTER_PATH || 'https://image.tmdb.org/t/p/w500';
@@ -170,53 +172,6 @@ async function navigateTo(type, id) {
   updateArrows();
 }
 
-// --- Sports (DLHD) ---
-
-async function openSportsHome() {
-  const hero = document.getElementById('heroContainer');
-  const dynamic = document.getElementById('dynamicContent');
-  if (hero) hero.innerHTML = '';
-  if (!dynamic) return;
-  dynamic.innerHTML = `
-    <div style="padding:20px 40px;display:flex;justify-content:space-between;align-items:center;">
-      <h1>Live Sports</h1>
-      <button class="ctrl-btn" onclick="reloadHome()">Home</button>
-    </div>
-    <div id="sportsGrid" class="full-grid"></div>`;
-
-  const grid = document.getElementById('sportsGrid');
-  if (!grid) return;
-  grid.innerHTML = '<div style="color:#aaa;">Loading channels...</div>';
-
-  try {
-    const channels = await api.getSportsChannels();
-    if (!channels || channels.length === 0) {
-      grid.innerHTML = '<div style="color:#aaa;">No sports channels available (check DLHD API key).</div>';
-      return;
-    }
-    grid.innerHTML = channels
-      .map((ch) => {
-        const logo = ch.logo_url
-          ? (ch.logo_url.startsWith('http') ? ch.logo_url : `https://dlhd.link/${ch.logo_url}`)
-          : 'https://via.placeholder.com/200x200?text=Channel';
-        const name = (ch.channel_name || '').replace(/'/g, "\\'");
-        return `
-          <div class="movie-card" onclick="window.openSportsChannel('${ch.channel_id}','${name}')">
-            <img src="${logo}" alt="${name}" style="object-fit:contain;background:#000;">
-            <div style="padding:8px;font-size:0.8rem;text-align:center;">${ch.channel_name}</div>
-          </div>`;
-      })
-      .join('');
-  } catch (e) {
-    grid.innerHTML = '<div style="color:red;">Failed to load sports channels.</div>';
-  }
-}
-
-function openSportsChannel(channelId, channelName) {
-  const url = `https://dlhd.link/stream/stream-${channelId}.php`;
-  window.openPlayerOverlay(url, channelName);
-}
-
 async function loadDetails(type, id) {
   const modal = document.getElementById('mainModal');
   const inner = document.getElementById('modalInnerBody');
@@ -348,8 +303,12 @@ function toggle(k, id, t, p, type) {
 
 async function save() {
   persistUsers();
+  if (auth.config?.domain) {
+    const token = await auth.getAccessToken();
+    if (token) await api.profilesSaveMine(token, state.users);
+  }
   updateLists();
-  if (state.activeUser) {
+  if (state.activeUser && !auth.config?.domain) {
     try {
       await api.profilesSave({
         id: state.activeUser.id,
@@ -552,8 +511,6 @@ window.playContent = player.playContent;
 window.playTV = player.playTV;
 window.openPlayerOverlay = player.openPlayerOverlay;
 window.playTurboStream = player.playTurboStream;
-window.openSports = openSportsHome;
-window.openSportsChannel = openSportsChannel;
 window.switchType = switchType;
 window.initApp = initApp;
 window.reloadHome = reloadHome;
@@ -578,8 +535,70 @@ window.surpriseMe = surpriseMe;
 window.createCard = createCard;
 window.state = state;
 
-// Arranque
-// Arranque: mostrar perfiles locales al instante, luego sincronizar con Cloudflare
+// Arranque: tema, luego Auth0 (si existe) → authGate o profileGate → main app
 theme.loadSavedTheme();
-profiles.renderProfiles();
-syncAllProfiles();
+
+async function bootstrap() {
+  await auth.init();
+
+  const authGateEl = document.getElementById('authGate');
+  const profileGateEl = document.getElementById('profileGate');
+
+  if (auth.isAuthCallback()) {
+    try {
+      await auth.handleCallback();
+      const user = await auth.getUser();
+      if (user && user.sub) setAuth0User(user.sub);
+      if (auth.config?.domain) {
+        const token = await auth.getAccessToken();
+        const fromDb = token ? await api.profilesFetchMine(token) : null;
+        if (Array.isArray(fromDb) && fromDb.length > 0) {
+          state.users = fromDb;
+          persistUsers();
+        }
+      }
+      authGateEl && (authGateEl.style.display = 'none');
+      profileGateEl && (profileGateEl.style.display = 'flex');
+      profiles.renderProfiles();
+      if (!auth.config?.domain) syncAllProfiles();
+      return;
+    } catch (e) {
+      console.error('Auth0 callback error:', e);
+      if (authGateEl) {
+        authGateEl.style.display = 'flex';
+        authGateEl.style.flexDirection = 'column';
+      }
+      if (profileGateEl) profileGateEl.style.display = 'none';
+      return;
+    }
+  }
+
+  const authenticated = await auth.isAuthenticated();
+  if (!authenticated && auth.config && auth.config.domain) {
+    if (authGateEl) {
+      authGateEl.style.display = 'flex';
+      authGateEl.style.flexDirection = 'column';
+    }
+    if (profileGateEl) profileGateEl.style.display = 'none';
+    return;
+  }
+
+  if (auth.config?.domain) {
+    const user = await auth.getUser();
+    if (user && user.sub) setAuth0User(user.sub);
+    const token = await auth.getAccessToken();
+    const fromDb = token ? await api.profilesFetchMine(token) : null;
+    if (Array.isArray(fromDb) && fromDb.length > 0) {
+      state.users = fromDb;
+      persistUsers();
+    }
+  }
+  if (authGateEl) authGateEl.style.display = 'none';
+  if (profileGateEl) profileGateEl.style.display = 'flex';
+  profiles.renderProfiles();
+  if (!auth.config?.domain) syncAllProfiles();
+}
+
+window.authLogin = auth.login;
+window.authSignUp = auth.signUp;
+bootstrap();

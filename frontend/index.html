@@ -34,13 +34,24 @@
     </div>
 </div>
 
+<div id="authGate" class="auth-gate" style="display: none;">
+    <div class="auth-gate-card">
+        <div class="auth-gate-logo">RV Plus</div>
+        <p class="auth-gate-subtitle">Sign in or create an account to continue</p>
+        <div class="auth-gate-buttons">
+            <button type="button" class="auth-gate-btn auth-gate-btn-primary" onclick="window.authLogin()">Sign in</button>
+            <button type="button" class="auth-gate-btn auth-gate-btn-secondary" onclick="window.authSignUp()">Create account</button>
+        </div>
+    </div>
+</div>
+
 <div id="profileGate" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; width: 100vw; background: #000; overflow: hidden;">
     <div class="version-banner" style="position: absolute; top: 25px; right: 25px; z-index: 100;" onclick="document.getElementById('versionModal').style.display='flex'">
         Version 1.2 Updated 12/30<span style="margin-left:8px;">ⓘ</span>
     </div>
-    <h1 style="font-size: 3.5rem; margin-bottom: 20px;">Who's watching?</h1>
+    <h1 class="profile-gate-title">Who's watching?</h1>
     <div id="profileList" class="profile-container"></div>
-    <div style="margin-top: 50px; display:flex; gap:15px;">
+    <div class="profile-gate-actions">
         <button class="ctrl-btn" style="border-color:#555; color:#888;" onclick="toggleEditMode()" id="editBtn">Settings</button>
         <button class="ctrl-btn" onclick="openProfileCreation()">+ Add Profile</button>
     </div>
@@ -66,9 +77,9 @@
     </div>
 </div>
 
-<div id="profileCreation" style="display:none;">
+<div id="profileCreation" class="profile-creation-panel" style="display:none;">
     <h1 id="creationTitle">Profile Editor</h1>
-    <input type="text" id="pName" class="ctrl-btn" style="width:350px; border-radius:8px;" placeholder="Name">
+    <input type="text" id="pName" class="ctrl-btn profile-input" placeholder="Name">
     <div id="avatarGallery" style="display:flex; gap:10px; margin:20px 0; flex-wrap:wrap; justify-content:center; max-width:600px;">
         <img src="https://www.pngall.com/wp-content/uploads/10/Walter-White-Breaking-Bad-PNG-Picture.png" style="width:100px; height:80px; border-radius:4px; cursor:pointer; border: 2px solid transparent;" onclick="selectAvatar(this)" alt="">
         <img src="https://images.squarespace-cdn.com/content/v1/528252b7e4b00150d03a4848/1503802775944-14J565KYKE9VUEXQZ7UX/ke17ZwdGBToddI8pDm48kJUlZr2Ql5GtSKWrQpjur5t7gQa3H78H3Y0txjaiv_0fDoOvxcdMmMKkDsyUqMSsMWxHk725yiiHCCLfrh8O1z5QPOohDIaIeljMHgDF5CVlOqpeNLcJ80NK65_fV7S1Uc2TsYyWrvo4cxLsTiAHD0wm8wv6KuSQ-vWcvdKCNFvRm4bjm9DAHF2kOsIZRJKXnA/RickAndMorty_MortyConfusedBlink1500.gif" style="width:80px; height:80px; border-radius:4px; cursor:pointer; border: 2px solid transparent;" onclick="selectAvatar(this)" alt="">
@@ -76,9 +87,9 @@
         <img src="https://brian.carnell.com/wp-content/uploads/2019/12/spiderman-animated-gif.gif" style="width:80px; height:80px; border-radius:4px; cursor:pointer; border: 2px solid transparent;" onclick="selectAvatar(this)" alt="">
         <img src="https://www.icegif.com/wp-content/uploads/2023/10/icegif-808.gif" style="width:120px; height:80px; border-radius:4px; cursor:pointer; border: 2px solid transparent;" onclick="selectAvatar(this)" alt="">
     </div>
-    <input type="text" id="pCustom" class="ctrl-btn" style="width:350px; border-radius:8px; font-size:0.8rem;" placeholder="Or Paste Image URL">
+    <input type="text" id="pCustom" class="ctrl-btn profile-input profile-input-custom" placeholder="Or Paste Image URL">
     <div id="deleteArea" style="margin: 15px 0;"></div>
-    <div style="display:flex; gap:15px;">
+    <div class="profile-creation-actions">
         <button class="ctrl-btn" onclick="saveProfile()">Save</button>
         <button class="ctrl-btn" style="background:#333;" onclick="closeCreation()">Cancel</button>
     </div>
@@ -92,7 +103,6 @@
         <button id="btnAnything" class="type-btn" onclick="switchType('multi')">Anything</button>
     </div>
     <div style="display:flex; align-items:center; gap:20px;">
-        <button class="ctrl-btn" onclick="openSports()">Sports</button>
         <button class="ctrl-btn" onclick="openTheme()">Edit Theme</button>
         <button class="ctrl-btn" onclick="toggleQR()">QR</button>
         <div id="navUserPill" style="display:flex; align-items:center; gap:10px; cursor:pointer; border:1px solid var(--accent-color); padding:5px 12px; border-radius:20px;" onclick="logout()">
@@ -106,12 +116,16 @@
 
 <header id="mainHeader" style="display:none;">
     <div class="controls">
-        <button class="ctrl-btn" onclick="openFilter()">⚙️ Filter</button>
+        <button type="button" class="ctrl-btn ctrl-btn-filter" onclick="openFilter()">
+            <svg class="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Filter
+        </button>
         <div class="search-container">
-            <input type="text" id="searchBar" placeholder="Search universe..." onkeypress="if(event.key==='Enter') triggerSearch()">
-            <button class="search-icon-btn" onclick="triggerSearch()">🔍</button>
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="searchBar" class="search-input" placeholder="Search movies &amp; shows…" onkeypress="if(event.key==='Enter') triggerSearch()">
+            <button type="button" class="search-submit-btn" onclick="triggerSearch()" aria-label="Search">Search</button>
         </div>
-        <button class="ctrl-btn" onclick="surpriseMe()">🎲 Surprise</button>
+        <button type="button" class="ctrl-btn" onclick="surpriseMe()">Surprise me</button>
     </div>
 </header>
 

@@ -82,6 +82,33 @@ async function profilesDelete(id) {
   return r;
 }
 
+/** Perfiles del usuario en MongoDB (Auth0). Requiere token. */
+async function profilesFetchMine(token) {
+  if (!token) return null;
+  try {
+    const r = await fetch(apiUrl('/api/profiles/me'), {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return Array.isArray(data) ? data : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function profilesSaveMine(token, profiles) {
+  if (!token) return;
+  await fetch(apiUrl('/api/profiles/me'), {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + token,
+    },
+    body: JSON.stringify({ profiles }),
+  });
+}
+
 async function getRecommendations(items, excludeIds = []) {
   if (!items || items.length === 0) return [];
   if (C.USE_BACKEND) {
@@ -116,13 +143,6 @@ async function getRecommendations(items, excludeIds = []) {
   return results;
 }
 
-async function getSportsChannels() {
-  if (!C.USE_BACKEND) return [];
-  const r = await fetch(apiUrl('/api/sports/channels'));
-  if (!r.ok) return [];
-  return r.json();
-}
-
 export {
   getTmdb,
   getProxyStream,
@@ -130,6 +150,7 @@ export {
   profilesLoad,
   profilesLoadAll,
   profilesDelete,
+  profilesFetchMine,
+  profilesSaveMine,
   getRecommendations,
-  getSportsChannels,
 };

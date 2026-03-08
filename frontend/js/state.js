@@ -1,5 +1,6 @@
 /**
  * Estado global de la app (usuarios, usuario activo, tipo, modal history, viewAll pagination).
+ * Con Auth0: cada usuario tiene sus perfiles en localStorage bajo rv_users_${auth0Sub}.
  */
 const storage = typeof localStorage !== 'undefined' ? localStorage : { getItem: () => null, setItem: () => {} };
 const defaultUsers = [
@@ -14,12 +15,12 @@ const defaultUsers = [
   },
 ];
 
-function loadUsers() {
+function loadUsersFromKey(key) {
   try {
-    const raw = storage.getItem('rv_users');
-    return raw ? JSON.parse(raw) : [...defaultUsers];
+    const raw = storage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
   } catch (_) {
-    return [...defaultUsers];
+    return [];
   }
 }
 
@@ -34,9 +35,25 @@ export const state = {
   currentShow: null,
   currP: 0,
   actU: '',
-  users: loadUsers(),
+  /** Clave de localStorage para perfiles: 'rv_users' sin Auth0, 'rv_users_${sub}' con Auth0 */
+  storageKey: 'rv_users',
+  users: (() => {
+    const loaded = loadUsersFromKey('rv_users');
+    return loaded.length ? loaded : [...defaultUsers];
+  })(),
 };
 
+/**
+ * Cuando hay Auth0, asocia los perfiles al usuario (sub). Cada usuario solo ve los suyos.
+ */
+export function setAuth0User(sub) {
+  if (!sub) return;
+  const key = 'rv_users_' + sub;
+  state.storageKey = key;
+  const loaded = loadUsersFromKey(key);
+  state.users = loaded.length ? loaded : [...defaultUsers];
+}
+
 export function persistUsers() {
-  storage.setItem('rv_users', JSON.stringify(state.users));
+  storage.setItem(state.storageKey, JSON.stringify(state.users));
 }

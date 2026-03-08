@@ -1,8 +1,10 @@
 /**
  * Perfiles: login, logout, crear/editar/borrar, sincronización con backend/worker.
+ * Logout: si Auth0 está activo, cierra sesión en Auth0; si no, recarga.
  */
 import * as api from './api.js';
 import { state, persistUsers } from './state.js';
+import { auth } from './auth.js';
 
 const C = window.RV_CONFIG || {};
 const POSTER_PATH = C.POSTER_PATH || 'https://image.tmdb.org/t/p/w500';
@@ -36,12 +38,14 @@ function toggleEditMode() {
 async function login(id) {
   const users = state.users;
   state.activeUser = users.find((u) => u.id === id);
-  try {
-    const cloudData = await api.profilesLoad(id);
-    if (cloudData && cloudData.watch_history) {
-      state.activeUser.continueWatching = JSON.parse(cloudData.watch_history);
-    }
-  } catch (_) {}
+  if (!auth.config?.domain) {
+    try {
+      const cloudData = await api.profilesLoad(id);
+      if (cloudData && cloudData.watch_history) {
+        state.activeUser.continueWatching = JSON.parse(cloudData.watch_history);
+      }
+    } catch (_) {}
+  }
   document.getElementById('profileGate').style.display = 'none';
   document.getElementById('mainNav').style.display = 'flex';
   document.getElementById('mainHeader').style.display = 'block';
@@ -52,8 +56,8 @@ async function login(id) {
   if (typeof window.initApp === 'function') window.initApp();
 }
 
-function logout() {
-  location.reload();
+async function logout() {
+  await auth.logout();
 }
 
 function openProfileCreation(id = null) {
@@ -86,16 +90,23 @@ function openProfileCreation(id = null) {
 }
 
 async function deleteProfile(id) {
-  if (!confirm('Are you sure you want to delete this profile? It will be removed from all devices.')) return;
+  const msg = auth.config?.domain
+    ? '¿Eliminar este perfil? Solo se borrará en este dispositivo.'
+    : 'Are you sure you want to delete this profile? It will be removed from all devices.';
+  if (!confirm(msg)) return;
   try {
-    await api.profilesDelete(id);
+    if (!auth.config?.domain) await api.profilesDelete(id);
     state.users = state.users.filter((u) => u.id !== id);
     persistUsers();
+    if (auth.config?.domain) {
+      const token = await auth.getAccessToken();
+      if (token) await api.profilesSaveMine(token, state.users);
+    }
     renderProfiles();
     closeCreation();
   } catch (err) {
     console.error('Delete failed:', err);
-    alert('Could not delete from cloud. Please check your connection.');
+    if (!auth.config?.domain) alert('Could not delete from cloud. Please check your connection.');
   }
 }
 
@@ -121,7 +132,7 @@ async function saveProfile() {
     watch_history: JSON.stringify([]),
   };
   try {
-    await api.profilesSave(profileData);
+    if (!auth.config?.domain) await api.profilesSave(profileData);
     const users = state.users;
     if (state.editingProfileId) {
       const index = users.findIndex((u) => u.id === state.editingProfileId);
@@ -140,11 +151,16 @@ async function saveProfile() {
     }
     state.users = users;
     persistUsers();
+    if (auth.config?.domain) {
+      const token = await auth.getAccessToken();
+      if (token) await api.profilesSaveMine(token, state.users);
+    }
     renderProfiles();
     closeCreation();
   } catch (err) {
     console.error('Save failed:', err);
-    alert('Could not save to cloud. Ensure your Worker is deployed and Binding is set.');
+    if (!auth.config?.domain) alert('Could not save to cloud. Ensure your Worker is deployed and Binding is set.');
+    else alert('Could not save profile.');
   }
 }
 
