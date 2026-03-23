@@ -6,6 +6,10 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'OPTIONS']
+}));
 const { extractDecodedStreamUrl, sanitizeEmbedHtml } = require('./streamDecode.js');
 
 const app = express();
