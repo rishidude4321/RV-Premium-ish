@@ -36,7 +36,7 @@
 
 <div id="profileGate" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; width: 100vw; background: #000; overflow: hidden;">
     <div class="version-banner" style="position: absolute; top: 25px; right: 25px; z-index: 100;" onclick="document.getElementById('versionModal').style.display='flex'">
-        Version 1.2 Updated 12/30<span style="margin-left:8px;">ⓘ</span>
+        Version 1.3 Updated 3/22<span style="margin-left:8px;">ⓘ</span>
     </div>
     <h1 style="font-size: 3.5rem; margin-bottom: 20px;">Who's watching?</h1>
     <div id="profileList" class="profile-container"></div>
@@ -55,10 +55,15 @@
             <button class="ctrl-btn" style="width:auto; padding:5px 15px; font-size:0.8rem; margin-bottom:10px;" onclick="var d=document.getElementById('moreDetails'); d.style.display=d.style.display==='none'?'block':'none'">Click Here For More Details</button>
             <div id="moreDetails" style="display:none; text-align:left; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
                 <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">Summary</h3>
-                <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">The app uses TMDB API for metadata and a Cloudflare Worker proxy for streaming. Backend (Node.js) can proxy TMDB and profiles. Frontend is split into modules (api, theme, profiles, player, app).</p>
+                <p style="color:var(--secondary-text); font-size:0.85rem; margin-bottom:15px;">Cloud-based streaming platform designed to stream content with fast AD FREE playback (except for one for now at the start of the player, I've almost got it). The main functionality of the app is powered by a Node.js backend hosted on Render, which manages the heavy lifting like user accounts and security. To keep the stream smooth, I integrated a Cloudflare Worker bridge to handle the actual video data and prevent buffering. I also used Docker to package the entire system, which prevents bugs and allows the app to scale easily as more people use it. All user data and watch history are stored in a live SQL database, making this a complete, high-performance web application.</p>
                 <h3 style="color:#fff; font-size:1.1rem; margin:15px 0 5px 0;">All Features</h3>
                 <ul style="color:var(--secondary-text); font-size:0.85rem; line-height:1.6;">
-                    <li>Search, filters, themes, profiles, continue watching, my list, favorites, QR, surprise me, view all, similar content, cast, episodes (TV).</li>
+                    <li>Proxy Bridge: Uses a Cloudflare Worker to handle video streaming and prevent buffering by fetching video data in advance and storing the next few frames on a Cloudfare worker's KV.</li>
+                    <li>Docker Packaging: Ensures consistent deployment and easy scaling.</li>
+                    <li>SQL Database: Stores user data and watch history in a live database.</li>
+                    <li>24/7 Availability: Hosted on the cloud (Render & github).</li>
+                    <li>Persistent Profiles: User profiles are saved and can be accessed from any device.</li>
+                    <li>Note: Open source personal project built for the hell of it no monetization or actually hosting movie files so don't sue me.</li>
                 </ul>
             </div>
             <button class="ctrl-btn" style="width:100%; margin-top:20px;" onclick="document.getElementById('versionModal').style.display='none'">Close</button>
