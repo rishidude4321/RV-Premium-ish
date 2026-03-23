@@ -1,6 +1,7 @@
 /**
  * Capa de API: TMDB, proxy de stream y perfiles (backend o directo).
  */
+import { RV_CONFIG } from './config.js';
 const C = window.RV_CONFIG || {};
 
 function tmdbPath(path, query = '') {
