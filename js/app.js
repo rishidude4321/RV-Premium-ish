@@ -1,6 +1,7 @@
 /**
  * App principal: categorías, filas, detalle, modal, búsqueda, filtros, sincronización.
  */
+import { RV_CONFIG } from './config.js';
 import * as api from './api.js';
 import { state, persistUsers } from './state.js';
 import * as theme from './theme.js';
