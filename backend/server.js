@@ -10,9 +10,9 @@ const { extractDecodedStreamUrl, sanitizeEmbedHtml } = require('./streamDecode.j
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const TMDB_API_KEY = process.env.TMDB_API_KEY || '';
+const TMDB_API_KEY = process.env.TMDB_API_KEY || '31b33cade35075a7a011c88568bb1070';
 const WORKER_PROXY_URL = (process.env.WORKER_PROXY_URL || 'https://rv-plus.rishivira4321.workers.dev/').replace(/\/?$/, '/');
-const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
+const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '05c437e42e29cced67609faebf5051aee251d';
 
 function workerHeaders() {
   const h = { 'Content-Type': 'application/json' };

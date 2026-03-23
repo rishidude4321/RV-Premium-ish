@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./backend
+    restart: always
+    env_file: .env
+    networks:
+      - rv_net
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+    networks:
+      - rv_net
+
+networks:
+  rv_net:
+    driver: bridge
